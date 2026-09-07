@@ -11,10 +11,11 @@ import (
 	"github.com/omkar273/burrow/packages/engine/internal/domain/source"
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
 	entrepo "github.com/omkar273/burrow/packages/engine/internal/repository/ent"
+	sqlitedb "github.com/omkar273/burrow/packages/engine/internal/sqlite"
 	"github.com/omkar273/burrow/packages/engine/internal/types"
 )
 
-func newSourceForTest(t *testing.T, c *entrepo.Client) string {
+func newSourceForTest(t *testing.T, c *sqlitedb.Client) string {
 	t.Helper()
 	id := types.NewID(types.PrefixSource)
 	err := entrepo.NewSourceRepository(c).Create(context.Background(), source.Source{
@@ -27,7 +28,7 @@ func newSourceForTest(t *testing.T, c *entrepo.Client) string {
 	return id
 }
 
-func mustCreateBlob(t *testing.T, c *entrepo.Client, hash string, size int64) string {
+func mustCreateBlob(t *testing.T, c *sqlitedb.Client, hash string, size int64) string {
 	t.Helper()
 	id := types.NewID(types.PrefixBlob)
 	if _, err := c.Ent().Blob.Create().

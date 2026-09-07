@@ -54,7 +54,8 @@ make generate-migration NAME=<name>
 |---|---|---|
 | Facade | `packages/engine/*.go` | The entire public surface. No `internal/` type in any signature. |
 | Domain | `packages/engine/internal/domain/` | Models and interfaces. Zero third-party imports. No network, no disk. |
-| Repository | `packages/engine/internal/repository/` | Implements domain interfaces. Generated `ent.*` types never escape it. |
+| Database | `packages/engine/internal/sqlite/` | Owns the handle, `WithTx`, and migrations. Nothing else opens a connection. |
+| Repository | `packages/engine/internal/repository/` | Implements domain interfaces. Generated `ent.*` types never escape it. Queries go through `Querier(ctx)`, never the client directly, so every method works inside a transaction. |
 | Adapters | `internal/source/`, `internal/storage/`, `internal/credential/` | Implement ports. Never call upward. |
 | Service | `packages/engine/internal/service/` | Use cases. Orchestrates repositories and adapters. |
 | Binaries | `packages/engine/cmd/burrow/`, `packages/engine/cmd/migrate/` | Consume the facade only. The compiler cannot block `internal/` here — `scripts/check-layers.sh` does. |

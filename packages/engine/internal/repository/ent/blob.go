@@ -7,11 +7,12 @@ import (
 	entblob "github.com/omkar273/burrow/packages/engine/ent/blob"
 	"github.com/omkar273/burrow/packages/engine/internal/domain/blob"
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
+	sqlitedb "github.com/omkar273/burrow/packages/engine/internal/sqlite"
 )
 
-type blobRepository struct{ c *Client }
+type blobRepository struct{ c *sqlitedb.Client }
 
-func NewBlobRepository(c *Client) blob.Repository { return &blobRepository{c: c} }
+func NewBlobRepository(c *sqlitedb.Client) blob.Repository { return &blobRepository{c: c} }
 
 func blobFromEnt(b *generated.Blob) blob.Blob {
 	return blob.Blob{
@@ -23,7 +24,7 @@ func blobFromEnt(b *generated.Blob) blob.Blob {
 }
 
 func (r *blobRepository) Create(ctx context.Context, b *blob.Blob) error {
-	err := r.c.ent.Blob.Create().
+	err := r.c.Querier(ctx).Blob.Create().
 		SetID(b.ID).
 		SetContentHash(b.ContentHash).
 		SetSizeBytes(b.SizeBytes).
@@ -35,7 +36,7 @@ func (r *blobRepository) Create(ctx context.Context, b *blob.Blob) error {
 }
 
 func (r *blobRepository) Get(ctx context.Context, id string) (blob.Blob, error) {
-	row, err := r.c.ent.Blob.Get(ctx, id)
+	row, err := r.c.Querier(ctx).Blob.Get(ctx, id)
 	if err != nil {
 		if generated.IsNotFound(err) {
 			return blob.Blob{}, ierr.New("no blob with id " + id).Mark(ierr.ErrNotFound)
@@ -46,7 +47,7 @@ func (r *blobRepository) Get(ctx context.Context, id string) (blob.Blob, error) 
 }
 
 func (r *blobRepository) GetByContentHash(ctx context.Context, hash string) (blob.Blob, error) {
-	row, err := r.c.ent.Blob.Query().Where(entblob.ContentHash(hash)).Only(ctx)
+	row, err := r.c.Querier(ctx).Blob.Query().Where(entblob.ContentHash(hash)).Only(ctx)
 	if err != nil {
 		if generated.IsNotFound(err) {
 			return blob.Blob{}, ierr.New("no blob with content hash " + hash).Mark(ierr.ErrNotFound)

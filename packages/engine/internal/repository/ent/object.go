@@ -10,12 +10,13 @@ import (
 	entversion "github.com/omkar273/burrow/packages/engine/ent/objectversion"
 	"github.com/omkar273/burrow/packages/engine/internal/domain/object"
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
+	sqlitedb "github.com/omkar273/burrow/packages/engine/internal/sqlite"
 	"github.com/omkar273/burrow/packages/engine/internal/types"
 )
 
-type objectRepository struct{ c *Client }
+type objectRepository struct{ c *sqlitedb.Client }
 
-func NewObjectRepository(c *Client) object.Repository { return &objectRepository{c: c} }
+func NewObjectRepository(c *sqlitedb.Client) object.Repository { return &objectRepository{c: c} }
 
 func objectFromEnt(o *generated.Object) object.Object {
 	return object.Object{
@@ -47,7 +48,7 @@ func (r *objectRepository) Create(ctx context.Context, o *object.Object) error {
 	if o.LastSeenAt.IsZero() {
 		o.LastSeenAt = now
 	}
-	err := r.c.ent.Object.Create().
+	err := r.c.Querier(ctx).Object.Create().
 		SetID(o.ID).
 		SetSourceID(o.SourceID).
 		SetKind(string(o.Kind)).
@@ -63,7 +64,7 @@ func (r *objectRepository) Create(ctx context.Context, o *object.Object) error {
 }
 
 func (r *objectRepository) Get(ctx context.Context, id string) (object.Object, error) {
-	row, err := r.c.ent.Object.Get(ctx, id)
+	row, err := r.c.Querier(ctx).Object.Get(ctx, id)
 	if err != nil {
 		if generated.IsNotFound(err) {
 			return object.Object{}, ierr.New("no object with id " + id).Mark(ierr.ErrNotFound)
@@ -79,7 +80,7 @@ func (r *objectRepository) Get(ctx context.Context, id string) (object.Object, e
 // returns from the provider under a new ID that points at content we
 // already hold.
 func (r *objectRepository) GetByExternalID(ctx context.Context, sourceID, externalID string) (object.Object, error) {
-	row, err := r.c.ent.Object.Query().
+	row, err := r.c.Querier(ctx).Object.Query().
 		Where(entobject.SourceID(sourceID), entobject.ExternalID(externalID)).
 		Only(ctx)
 	if err == nil {
@@ -89,7 +90,7 @@ func (r *objectRepository) GetByExternalID(ctx context.Context, sourceID, extern
 		return object.Object{}, ierr.Wrap(err, "querying object by external id").Mark(ierr.ErrInternal)
 	}
 
-	alias, err := r.c.ent.ObjectAlias.Query().
+	alias, err := r.c.Querier(ctx).ObjectAlias.Query().
 		Where(entalias.SourceID(sourceID), entalias.ExternalID(externalID)).
 		Only(ctx)
 	if err != nil {
@@ -110,43 +111,34 @@ func (r *objectRepository) GetByExternalID(ctx context.Context, sourceID, extern
 // resolve to the wrong object. The check runs in the same transaction as the
 // insert, because two concurrent AddAlias calls could otherwise both pass it.
 func (r *objectRepository) AddAlias(ctx context.Context, objectID, sourceID, externalID string) error {
-	tx, err := r.c.ent.Tx(ctx)
-	if err != nil {
-		return ierr.Wrap(err, "beginning alias transaction").Mark(ierr.ErrInternal)
-	}
-	defer tx.Rollback() //nolint:errcheck // no-op once committed
-
-	shadowed, err := tx.Object.Query().
-		Where(entobject.SourceID(sourceID), entobject.ExternalID(externalID)).
-		Exist(ctx)
-	if err != nil {
-		return ierr.Wrap(err, "checking for a shadowed object identity").Mark(ierr.ErrInternal)
-	}
-	if shadowed {
-		return ierr.New("external id " + externalID + " already belongs to an object").
-			WithHint("an alias may not shadow an identity an object already claims").
-			Mark(ierr.ErrValidation)
-	}
-
-	if err := tx.ObjectAlias.Create().
-		SetID(types.NewID(types.PrefixObject)).
-		SetObjectID(objectID).
-		SetSourceID(sourceID).
-		SetExternalID(externalID).
-		Exec(ctx); err != nil {
-		return ierr.Wrap(err, "creating object alias").Mark(ierr.ErrInternal)
-	}
-	if err := tx.Commit(); err != nil {
-		return ierr.Wrap(err, "committing object alias").Mark(ierr.ErrInternal)
-	}
-	return nil
+	return r.c.WithTx(ctx, func(ctx context.Context) error {
+		shadowed, err := r.c.Querier(ctx).Object.Query().
+			Where(entobject.SourceID(sourceID), entobject.ExternalID(externalID)).
+			Exist(ctx)
+		if err != nil {
+			return ierr.Wrap(err, "checking for a shadowed object identity").Mark(ierr.ErrInternal)
+		}
+		if shadowed {
+			return ierr.New("external id " + externalID + " already belongs to an object").
+				WithHint("an alias may not shadow an identity an object already claims").
+				Mark(ierr.ErrValidation)
+		}
+		if err := r.c.Querier(ctx).ObjectAlias.Create().
+			SetID(types.NewID(types.PrefixObject)).
+			SetObjectID(objectID).
+			SetSourceID(sourceID).
+			SetExternalID(externalID).
+			Exec(ctx); err != nil {
+			return ierr.Wrap(err, "creating object alias").Mark(ierr.ErrInternal)
+		}
+		return nil
+	})
 }
-
 func (r *objectRepository) CreateVersion(ctx context.Context, v *object.Version) error {
 	if v.CapturedAt.IsZero() {
 		v.CapturedAt = time.Now().UTC()
 	}
-	create := r.c.ent.ObjectVersion.Create().
+	create := r.c.Querier(ctx).ObjectVersion.Create().
 		SetID(v.ID).
 		SetObjectID(v.ObjectID).
 		SetBlobID(v.BlobID).
@@ -161,7 +153,7 @@ func (r *objectRepository) CreateVersion(ctx context.Context, v *object.Version)
 }
 
 func (r *objectRepository) CurrentVersion(ctx context.Context, objectID string) (object.Version, error) {
-	row, err := r.c.ent.ObjectVersion.Query().
+	row, err := r.c.Querier(ctx).ObjectVersion.Query().
 		Where(entversion.ObjectID(objectID)).
 		Order(generated.Desc(entversion.FieldCapturedAt), generated.Desc(entversion.FieldID)).
 		First(ctx)

@@ -20,6 +20,7 @@ import (
 	"github.com/omkar273/burrow/packages/engine/internal/domain/source"
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
 	entrepo "github.com/omkar273/burrow/packages/engine/internal/repository/ent"
+	sqlitedb "github.com/omkar273/burrow/packages/engine/internal/sqlite"
 	"github.com/omkar273/burrow/packages/engine/internal/storage"
 	"github.com/omkar273/burrow/packages/engine/internal/storage/localfs"
 	"github.com/omkar273/burrow/packages/engine/internal/validator"
@@ -46,7 +47,7 @@ type Paths struct {
 type Engine struct {
 	profile config.Profile
 	lock    *flock.Flock
-	state   *entrepo.Client
+	state   *sqlitedb.Client
 	store   storage.Store
 
 	objects object.Repository
@@ -90,7 +91,7 @@ func Open(ctx context.Context, cfg Config) (*Engine, error) {
 			Mark(ierr.ErrProfileLocked)
 	}
 
-	state, err := entrepo.Open(entrepo.DSN(profile))
+	state, err := sqlitedb.Open(sqlitedb.DSN(profile))
 	if err != nil {
 		_ = lock.Unlock()
 		return nil, err

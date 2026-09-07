@@ -39,27 +39,31 @@ func run(args []string, out *os.File) error {
 		if err != nil {
 			return err
 		}
-		if len(plan) == 0 {
-			fmt.Fprintln(out, "no pending migrations")
+		if plan == "" {
+			fmt.Fprintln(out, "schema is up to date")
 			return nil
 		}
-		fmt.Fprintf(out, "%d pending migration(s), not applied:\n\n", len(plan))
-		for _, m := range plan {
-			fmt.Fprintf(out, "-- %s\n%s\n", m.Name, m.SQL)
-		}
+		fmt.Fprintln(out, "pending statements, not applied:")
+		fmt.Fprintln(out)
+		fmt.Fprintln(out, plan)
 		return nil
 	}
 
-	applied, err := engine.Migrate(ctx, cfg)
+	before, err := engine.SchemaVersion(ctx, cfg)
 	if err != nil {
 		return err
 	}
-	if len(applied) == 0 {
-		fmt.Fprintln(out, "no pending migrations")
+	if err := engine.Migrate(ctx, cfg); err != nil {
+		return err
+	}
+	after, err := engine.SchemaVersion(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	if before == after {
+		fmt.Fprintf(out, "schema is up to date (version %d)\n", after)
 		return nil
 	}
-	for _, name := range applied {
-		fmt.Fprintf(out, "applied %s\n", name)
-	}
+	fmt.Fprintf(out, "migrated: schema version %d -> %d\n", before, after)
 	return nil
 }

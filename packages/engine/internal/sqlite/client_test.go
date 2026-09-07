@@ -1,19 +1,19 @@
-package ent_test
+package sqlite_test
 
 import (
 	"context"
 	"path/filepath"
 	"testing"
 
-	entrepo "github.com/omkar273/burrow/packages/engine/internal/repository/ent"
+	sqlitedb "github.com/omkar273/burrow/packages/engine/internal/sqlite"
 )
 
 // A real SQLite file, not a mock: these tests exist to prove the schema
 // and the driver actually work.
-func openTestClient(t *testing.T) *entrepo.Client {
+func openTestClient(t *testing.T) *sqlitedb.Client {
 	t.Helper()
-	dsn := entrepo.FileDSN(filepath.Join(t.TempDir(), "state.db"))
-	c, err := entrepo.Open(dsn)
+	dsn := sqlitedb.FileDSN(filepath.Join(t.TempDir(), "state.db"))
+	c, err := sqlitedb.Open(dsn)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -79,7 +79,7 @@ func TestMigrateIsIdempotentAcrossReopen(t *testing.T) {
 	ctx := context.Background()
 	path := filepath.Join(t.TempDir(), "state.db")
 
-	first, err := entrepo.Open(entrepo.FileDSN(path))
+	first, err := sqlitedb.Open(sqlitedb.FileDSN(path))
 	if err != nil {
 		t.Fatalf("first open: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestMigrateIsIdempotentAcrossReopen(t *testing.T) {
 		t.Fatalf("close: %v", err)
 	}
 
-	second, err := entrepo.Open(entrepo.FileDSN(path))
+	second, err := sqlitedb.Open(sqlitedb.FileDSN(path))
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
