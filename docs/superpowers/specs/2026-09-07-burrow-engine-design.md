@@ -292,9 +292,21 @@ To be paid in the M1 PR, not deferred:
 
 Deliberately unsettled; each blocks a later milestone, none blocks M0 or M1.
 
+### Dependencies deferred to their milestone
+
+`go mod tidy` removes anything nothing imports, so these are recorded here rather than added early. Each is what restic, kopia or syncthing already use for the same job.
+
+| Dependency | Milestone | Why |
+|---|---|---|
+| `golang.org/x/sync` (`errgroup`, `semaphore`) | M2/M3 | Gmail caps concurrent requests per mailbox at roughly 50 and returns 429 well below the unit quota. `semaphore.Weighted` bounds the fetch fan-out; `errgroup` gives first-error-wins cancellation. Used by restic. |
+| `github.com/cenkalti/backoff/v4` | M2 | 429 and 5xx retry. Exponential backoff with jitter is easy to get subtly wrong by hand. Used by restic. |
+| `github.com/minio/minio-go/v7` | M6 | S3-compatible object storage. **Both restic and kopia chose it over `aws-sdk-go-v2`** for the same S3-compatible-first requirement, which settles the open question below. |
+
+### Open questions
+
 | Question | Blocks |
 |---|---|
-| S3 SDK: `minio-go` vs `aws-sdk-go-v2` | M6 |
+| S3 SDK: `minio-go` vs `aws-sdk-go-v2` — evidence above favours `minio-go` | M6 |
 | Archive bundle format specifics (handoff §10) | M8 |
 | Encryption and key ownership model (handoff §34) | post-V1 |
 | Whether `ObjectVersion` survives contact with a mutable source | first non-Gmail connector |

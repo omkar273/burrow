@@ -12,6 +12,7 @@ const (
 	CodeReplicaCorrupt    Code = "replica_corrupt"
 	CodeCredentialExpired Code = "credential_expired"
 	CodeSourceUnavailable Code = "source_unavailable"
+	CodeProfileLocked     Code = "profile_locked"
 	CodeNotFound          Code = "not_found"
 	CodeValidation        Code = "validation"
 	CodeInternal          Code = "internal"
@@ -38,6 +39,7 @@ var (
 	ErrReplicaCorrupt    = newSentinel(CodeReplicaCorrupt, "replica failed verification")
 	ErrCredentialExpired = newSentinel(CodeCredentialExpired, "credential expired and could not be refreshed")
 	ErrSourceUnavailable = newSentinel(CodeSourceUnavailable, "source is unavailable")
+	ErrProfileLocked     = newSentinel(CodeProfileLocked, "another burrowd holds this profile")
 	ErrNotFound          = newSentinel(CodeNotFound, "not found")
 	ErrValidation        = newSentinel(CodeValidation, "validation failed")
 	ErrInternal          = newSentinel(CodeInternal, "internal error")

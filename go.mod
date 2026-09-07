@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/go-playground/validator/v10 v10.30.4
+	github.com/gofrs/flock v0.13.1
 	github.com/oklog/ulid/v2 v2.1.2
 	github.com/samber/lo v1.53.0
 	modernc.org/sqlite v1.58.0
@@ -25,7 +26,7 @@ require (
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-openapi/inflect v0.19.0 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.18.1 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect

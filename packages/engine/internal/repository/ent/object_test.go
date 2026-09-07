@@ -5,6 +5,8 @@ import (
 	stderrors "errors"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/omkar273/burrow/packages/engine/internal/domain/object"
 	"github.com/omkar273/burrow/packages/engine/internal/domain/source"
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
@@ -56,11 +58,11 @@ func TestObjectRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get: %v", err)
 	}
-	if got.ExternalID != obj.ExternalID {
-		t.Fatalf("ExternalID = %q, want %q", got.ExternalID, obj.ExternalID)
-	}
-	if got.Kind != object.KindMessage {
-		t.Fatalf("Kind = %q, want %q", got.Kind, object.KindMessage)
+	// Timestamps are set by the repository, so compare everything else.
+	if diff := cmp.Diff(*obj, got,
+		cmpopts.IgnoreFields(object.Object{}, "FirstSeenAt", "LastSeenAt"),
+	); diff != "" {
+		t.Fatalf("round trip changed the object (-want +got):\n%s", diff)
 	}
 }
 

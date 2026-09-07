@@ -12,6 +12,7 @@ package engine
 import (
 	"context"
 	"os"
+	"path/filepath"
 
 	"github.com/omkar273/burrow/packages/engine/internal/config"
 	"github.com/omkar273/burrow/packages/engine/internal/domain/blob"
@@ -22,6 +23,8 @@ import (
 	"github.com/omkar273/burrow/packages/engine/internal/storage"
 	"github.com/omkar273/burrow/packages/engine/internal/storage/localfs"
 	"github.com/omkar273/burrow/packages/engine/internal/validator"
+
+	"github.com/gofrs/flock"
 )
 
 // Plain strings, so nothing from internal/ crosses the boundary.
@@ -42,6 +45,7 @@ type Paths struct {
 // Engine is not safe for concurrent use until the job engine lands.
 type Engine struct {
 	profile config.Profile
+	lock    *flock.Flock
 	state   *entrepo.Client
 	store   storage.Store
 
@@ -73,23 +77,40 @@ func Open(ctx context.Context, cfg Config) (*Engine, error) {
 		return nil, err
 	}
 
+	// An OS advisory lock, not a pidfile: the kernel drops it when the
+	// process dies, so a crashed burrowd leaves nothing stale to clear.
+	lock := flock.New(filepath.Join(profile.Root, ".lock"))
+	held, err := lock.TryLock()
+	if err != nil {
+		return nil, ierr.Wrap(err, "locking profile "+profile.Name).Mark(ierr.ErrInternal)
+	}
+	if !held {
+		return nil, ierr.New("profile " + profile.Name + " is already open").
+			WithHint("another burrowd is running against this profile; stop it or use --profile").
+			Mark(ierr.ErrProfileLocked)
+	}
+
 	state, err := entrepo.Open(entrepo.DSN(profile))
 	if err != nil {
+		_ = lock.Unlock()
 		return nil, err
 	}
 	if err := state.Migrate(ctx); err != nil {
 		_ = state.Close()
+		_ = lock.Unlock()
 		return nil, err
 	}
 
 	store, err := localfs.New(profile.ObjectDir)
 	if err != nil {
 		_ = state.Close()
+		_ = lock.Unlock()
 		return nil, err
 	}
 
 	return &Engine{
 		profile: profile,
+		lock:    lock,
 		state:   state,
 		store:   store,
 		objects: entrepo.NewObjectRepository(state),
@@ -111,5 +132,11 @@ func (e *Engine) Close() error {
 	if e.state == nil {
 		return nil
 	}
-	return e.state.Close()
+	err := e.state.Close()
+	if e.lock != nil {
+		if unlockErr := e.lock.Unlock(); err == nil {
+			err = unlockErr
+		}
+	}
+	return err
 }
