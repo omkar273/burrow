@@ -241,6 +241,40 @@ the API, whose limit was request-shaped. Initial sync remains a resumable,
 multi-day background job; M2 must throttle on bytes transferred rather than on
 request count.
 
+### Two Gmail connectors, not one
+
+Gmail gets two connector implementations behind the same ports:
+
+| | `gmailimap` (V1) | `gmailapi` (later) |
+|---|---|---|
+| Transport | IMAP | Gmail REST API |
+| Credential | app password, or XOAUTH2 | OAuth, scoped and incremental |
+| Setup cost | 2FA + an app password | Cloud project + consent screen |
+| Limit shape | 2,500 MB/day, bandwidth-bound | ~300 msg/min, request-bound |
+| Reach | every IMAP provider | Gmail only |
+
+Both implement `source.Connector` and `source.Restorer` unchanged. This is what
+the ports were for: the transport is an adapter detail, and the archive does not
+know which one filled it.
+
+**They should produce the same `external_id`.** Gmail's API message id appears to
+be the hexadecimal form of the IMAP `X-GM-MSGID` integer. If that holds, an
+archive ingested over IMAP is compatible with one ingested over the API, and a
+user can switch transports without re-ingesting a mailbox. `external_id` is
+therefore normalised to the hex form regardless of connector. **This is M0
+question 9** — the whole two-connector story rests on it, and it is unverified.
+
+`gmailapi` is not scheduled. It exists in this spec so the IMAP connector is not
+written in a way that forecloses it: nothing Gmail-transport-specific may leak
+past the adapter boundary.
+
+### A gap in the library
+
+`emersion/go-imap/v2` has **no `X-GM-*` support** — verified by inspecting
+`v2.0.0-beta.8`. Labels, message ids and thread ids therefore need raw FETCH
+items regardless of which client library is used, and whether the library
+permits arbitrary fetch items is M0 question 10.
+
 ### Checkpoints
 
 `UIDVALIDITY` plus `UIDNEXT` per mailbox replaces `historyId`, and the failure
