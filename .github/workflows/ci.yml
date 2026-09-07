@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main,develop]
+  pull_request:
+
+# A new push to a PR makes the previous run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # mise is the project's toolchain manager; using it here means CI and a
+      # developer's machine resolve the same Go and Bun from mise.lock.
+      - uses: jdx/mise-action@v4
+        with:
+          version: 2026.8.0
+          cache: true
+
+      - name: Install dependencies
+        run: make install
+
+      - name: Lint and test
+        run: make check
+
+  cross-compile:
+    name: cgo-free cross-compile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: jdx/mise-action@v4
+        with:
+          version: 2026.8.0
+          cache: true
+
+      # The single-binary-on-a-NAS promise depends on the tree staying
+      # cgo-free. A dependency that quietly needs cgo breaks that without
+      # failing any test, so it is checked as its own job.
+      - name: Build for every target
+        run: |
+          set -euo pipefail
+          for target in linux/amd64 linux/arm64 darwin/arm64 windows/amd64; do
+            os="${target%/*}"; arch="${target#*/}"
+            printf '  %-16s' "$target"
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" mise exec -- go build ./... \
+              && echo OK
+          done
+
+  archive-roundtrip:
+    name: archive round-trip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: jdx/mise-action@v4
+        with:
+          version: 2026.8.0
+          cache: true
+
+      # Proves the commands a user actually runs still work, against a real
+      # archive in a throwaway home. Unit tests cover the library; this covers
+      # the binaries.
+      - name: migrate, inspect, and confirm no drift
+        run: |
+          set -euo pipefail
+          export HOME="$(mktemp -d)"
+
+          make migrate-dry-run > plan.sql
+          test -s plan.sql || { echo "dry run produced no plan on a fresh archive"; exit 1; }
+          grep -q 'CREATE TABLE' plan.sql
+
+          test ! -d "$HOME/.burrow" || { echo "dry run created an archive"; exit 1; }
+
+          make migrate
+          make burrow-paths
+
+          remaining=$(make migrate-dry-run 2>/dev/null | wc -l)
+          test "$remaining" -eq 0 || { echo "drift remains after migrate"; exit 1; }
