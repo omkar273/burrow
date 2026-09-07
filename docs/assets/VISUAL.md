@@ -2,17 +2,17 @@
 
 Palette: `#2E1F1A` `#8B5E3C` `#D9B895` `#F7EFE7` `#6BA67A`
 
-Published rasters are WebP, max ~1280px wide, rounded frames (`rx` ≈ 60 on 1280). Diagrams stay SVG with rounded canvases (`rx="28"`). GitHub Open Graph stays PNG.
+Published rasters are WebP, max ~1280px wide, rounded frames. Diagrams stay SVG with rounded canvases (`rx="28"`). GitHub Open Graph stays PNG.
 
 ## Published
 
-README rasters are character-only. Labels live in Markdown or SVG. The README opens on `burrow-hero.webp`, not the mark.
+The README opens on `burrow-hero.webp` (landing composite — wordmark allowed). Other character scenes stay label-free; labels live in Markdown or SVG.
 
 | File | Role |
 | --- | --- |
 | `logo.png` (repo root) | GitHub avatar / org mark |
 | `mascot.webp` | Footer |
-| `burrow-hero.webp` | README opener |
+| `burrow-hero.webp` | README opener (landing composite) |
 | `burrow-problem.webp` | Scattered sources (optional) |
 | `burrow-meet.webp` | Sources → Burrow → your storage |
 | `burrow-storage.webp` | Three homes |

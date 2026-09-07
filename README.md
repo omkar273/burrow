@@ -2,18 +2,7 @@
 > The first recovery loop is **not shipped**. This README is the product thesis and the build. Nothing here is installable yet.
 
 <p align="center">
-  <img src="docs/assets/burrow-hero.webp" width="920" alt="Mascot beside a burrow as mail, files, and records arrive" />
-</p>
-
-<h1 align="center">Burrow</h1>
-
-<p align="center">
-  <strong>Your SaaS data.<br/>Your storage.<br/>Your copy.</strong>
-</p>
-
-<p align="center">
-  Keep an independent, verifiable copy<br/>
-  of the data your business depends on.
+  <img src="docs/assets/burrow-hero.webp" width="920" alt="Burrow — your SaaS data, your storage, your copy. Mascot pulling mail, docs, chat, and code into a burrow you control." />
 </p>
 
 <p align="center">
@@ -27,8 +16,6 @@
   &nbsp;·&nbsp;
   <a href="#develop">Develop</a>
 </p>
-
-<p align="center">Open source · Self-hostable · Cloud-optional</p>
 
 ---
 
