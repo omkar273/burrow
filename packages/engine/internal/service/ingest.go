@@ -30,7 +30,10 @@ type IngestResult struct {
 	BlobReused bool
 }
 
-type Ingest struct{ deps Deps }
+type Ingest struct{ params ServiceParams }
+
+// NewIngest returns the ingest use case.
+func NewIngest(p ServiceParams) *Ingest { return &Ingest{params: p} }
 
 // IngestOne copies a single object into the archive.
 //
@@ -47,12 +50,12 @@ type Ingest struct{ deps Deps }
 func (s *Ingest) IngestOne(ctx context.Context, conn source.Connector, ref source.ObjectRef) (IngestResult, error) {
 	sourceID := conn.SourceID()
 
-	if existing, err := s.deps.Objects.GetByExternalID(ctx, sourceID, ref.ExternalID); err == nil {
-		version, err := s.deps.Objects.CurrentVersion(ctx, existing.ID)
+	if existing, err := s.params.Objects.GetByExternalID(ctx, sourceID, ref.ExternalID); err == nil {
+		version, err := s.params.Objects.CurrentVersion(ctx, existing.ID)
 		if err != nil {
 			return IngestResult{}, err
 		}
-		held, err := s.deps.Blobs.Get(ctx, version.BlobID)
+		held, err := s.params.Blobs.Get(ctx, version.BlobID)
 		if err != nil {
 			return IngestResult{}, err
 		}
@@ -89,15 +92,20 @@ func (s *Ingest) IngestOne(ctx context.Context, conn source.Connector, ref sourc
 		Kind: object.KindMessage, ExternalID: ref.ExternalID,
 		FirstSeenAt: now, LastSeenAt: now,
 	}
-	if err := s.deps.Objects.Create(ctx, obj); err != nil {
-		return IngestResult{}, err
-	}
-
 	version := &object.Version{
 		ID: types.NewID(types.PrefixVersion), ObjectID: obj.ID,
 		BlobID: blobID, CapturedAt: now,
 	}
-	if err := s.deps.Objects.CreateVersion(ctx, version); err != nil {
+
+	// One transaction: an object with no version is a row pointing at nothing.
+	// The blob is already durable at this point, so a rollback leaves an inert
+	// orphan rather than a dangling reference.
+	if err := s.params.Tx.WithTx(ctx, func(ctx context.Context) error {
+		if err := s.params.Objects.Create(ctx, obj); err != nil {
+			return err
+		}
+		return s.params.Objects.CreateVersion(ctx, version)
+	}); err != nil {
 		return IngestResult{}, err
 	}
 
@@ -110,7 +118,7 @@ func (s *Ingest) IngestOne(ctx context.Context, conn source.Connector, ref sourc
 // ensureBlob makes the bytes durable and returns the blob row's id, reusing an
 // existing row when the content is already stored.
 func (s *Ingest) ensureBlob(ctx context.Context, contentHash string, raw []byte) (id string, reused bool, err error) {
-	existing, err := s.deps.Blobs.GetByContentHash(ctx, contentHash)
+	existing, err := s.params.Blobs.GetByContentHash(ctx, contentHash)
 	switch {
 	case err == nil:
 		return existing.ID, true, nil
@@ -118,7 +126,7 @@ func (s *Ingest) ensureBlob(ctx context.Context, contentHash string, raw []byte)
 		return "", false, err
 	}
 
-	if err := s.deps.Store.Put(ctx, storage.KeyForHash(contentHash), bytes.NewReader(raw), int64(len(raw))); err != nil {
+	if err := s.params.Store.Put(ctx, storage.KeyForHash(contentHash), bytes.NewReader(raw), int64(len(raw))); err != nil {
 		return "", false, ierr.Wrap(err, "writing blob").Mark(ierr.ErrInternal)
 	}
 
@@ -126,7 +134,7 @@ func (s *Ingest) ensureBlob(ctx context.Context, contentHash string, raw []byte)
 		ID: types.NewID(types.PrefixBlob), ContentHash: contentHash,
 		SizeBytes: int64(len(raw)),
 	}
-	if err := s.deps.Blobs.Create(ctx, b); err != nil {
+	if err := s.params.Blobs.Create(ctx, b); err != nil {
 		return "", false, err
 	}
 	return b.ID, false, nil

@@ -140,3 +140,35 @@ func TestIngestFollowsAnAliasRecordedByRestore(t *testing.T) {
 		t.Fatal("an aliased id should report as already held")
 	}
 }
+
+// The object row and its version must commit together. A crash between them
+// would leave an object with no content — a row pointing at nothing, which is
+// the corruption the write ordering exists to prevent.
+func TestObjectAndVersionCommitTogether(t *testing.T) {
+	h := newHarness(t)
+	h.src.AddMessage("m1", []byte(rawMessage))
+
+	res, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: "m1"})
+	if err != nil {
+		t.Fatalf("IngestOne: %v", err)
+	}
+
+	// Every ingested object resolves to a current version.
+	v, err := h.objects.CurrentVersion(t.Context(), res.ObjectID)
+	if err != nil {
+		t.Fatalf("ingested object has no version: %v", err)
+	}
+	if v.ID != res.VersionID {
+		t.Fatalf("CurrentVersion = %q, want %q", v.ID, res.VersionID)
+	}
+
+	// And the version's blob is really in storage.
+	b, err := h.blobs.Get(t.Context(), v.BlobID)
+	if err != nil {
+		t.Fatalf("version references a missing blob row: %v", err)
+	}
+	ok, err := h.store.Exists(t.Context(), storage.KeyForHash(b.ContentHash))
+	if err != nil || !ok {
+		t.Fatal("version references bytes that are not in storage")
+	}
+}

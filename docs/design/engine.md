@@ -29,7 +29,7 @@ The handoff's §23 "V1 must have" list is six independent subsystems. It is deco
 | D2 | **Hexagonal / ports-and-adapters**, layer rules written into AGENTS.md | `domain/` holds models + interfaces with zero external deps; adapters implement them. Layer table format adopted from FlexPrice. |
 | D3 | **ent** ORM with **ent's own auto-migration** (`Schema.Create`), foreign keys on and dropping off. Version in SQLite's `PRAGMA user_version` | **Reversed 2026-09-08.** This decision originally mandated Atlas versioned migrations and explicitly forbade `Schema.Create`, on the grounds that the schema is a portability contract. Atlas was dropped because it made `ent/schema` and a directory of `.sql` files two sources of truth kept in step by a copy step, and a toolchain pin, for a single-file local database. `ent/schema` is now the only source of truth. What was preserved: the version identity (`SchemaVersion` constant → `user_version`), reviewable SQL before applying (`Schema.WriteTo` behind `make migrate-dry-run`), and the foreign keys. What was given up: per-change migration history, and a hand-written escape hatch for destructive changes. `WithDropColumn(false)` means a removed field leaves its column behind — divergence has to be handled deliberately when it first arises. |
 | D4 | **modernc.org/sqlite**, registered under the `sqlite3` driver name | Pure Go, FTS5 included, cross-compiles from macOS to Linux/ARM. A cgo driver forfeits the single-binary story. Needs a ~30-line wrapper because mattn registers as `sqlite3` and modernc as `sqlite`. |
-| D5 | **uber fx** for DI, composed from **per-package `fx.Module`s** | `fx.Lifecycle` gives ordered start/stop for background workers. Per-package modules keep `main.go` at ~40 lines — FlexPrice's rule of registering everything in `main.go` produced a 734-line file. |
+| D5 | **uber fx** for DI, wired in a **single file** (`packages/engine/wiring.go`) | `fx.Lifecycle` gives ordered start/stop. **Revised 2026-09-08:** this originally specified per-package `fx.Module`s to avoid FlexPrice's 734-line `main.go`. Centralised wiring is clearer at Burrow's size — the whole graph is 53 lines — and that file length is the tripwire: if it passes ~150 lines, split it back out. It lives at the facade rather than in `cmd/` because the compiler forbids `cmd/` from importing `internal/`. |
 | D6 | **The blob is the raw `.eml`**; everything else is derived index | IMAP `APPEND` takes raw RFC822, so we restore exactly the bytes we stored and byte-equality is directly assertable. A `.eml` also opens in any mail client with no Burrow installed — the portability property. |
 | D7 | **Raw-only blobs at M1**; attachments extracted as separate blobs at M4 | Deferred dedup costs ~2.4× on attachment bytes. Shredding the `.eml` and recomposing on restore must be byte-exact (base64 wrapping, MIME boundaries, header folding) — that risk is not taken before a passing restore test exists to catch it. |
 | D8 | **Prefixed k-sortable ULIDs** (`obj_`, `ver_`, `blob_`, `rep_`, `src_`, `job_`) | Makes the four-identity discipline (§4) visible at a glance; a `rep_` cannot be silently passed where an `obj_` belongs. Pattern adopted from FlexPrice. |
@@ -53,6 +53,7 @@ The handoff's §23 "V1 must have" list is six independent subsystems. It is deco
 go.mod  go.sum                        the only Go files at the repo root
 packages/engine/
   engine.go  migrate.go               the entire public surface
+  wiring.go                           the whole dependency graph, one file
   cmd/burrow/                        the daemon
   cmd/migrate/                        schema migrations, with --dry-run
   ent/  ent/schema/  ent/schema/mixin/
@@ -63,7 +64,8 @@ packages/engine/
     repository/ent/                   implements domain interfaces via Querier(ctx)
     storage/  storage/localfs/        driven adapter
     source/gmail/                     driven adapter
-    service/                          use cases: deps.go + ingest · restore · verify
+    service/                          use cases: params.go + ingest · restore · verify
+    repository/factory.go             wiring seam over repository/ent
     testutil/                         FakeSource, FakeStore, temp-file SQLite
 packages/web/                         TypeScript, bun workspace (M9)
 scripts/check-layers.sh               enforces both layer rules below

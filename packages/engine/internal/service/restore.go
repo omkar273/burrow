@@ -20,7 +20,10 @@ type RestoreResult struct {
 	BytesRestored int64
 }
 
-type Restore struct{ deps Deps }
+type Restore struct{ params ServiceParams }
+
+// NewRestore returns the restore use case.
+func NewRestore(p ServiceParams) *Restore { return &Restore{params: p} }
 
 // RestoreObject writes an object's current version back to the provider.
 //
@@ -42,17 +45,17 @@ func (s *Restore) RestoreObject(
 	sourceID, objectID string,
 	opts source.RestoreOpts,
 ) (RestoreResult, error) {
-	version, err := s.deps.Objects.CurrentVersion(ctx, objectID)
+	version, err := s.params.Objects.CurrentVersion(ctx, objectID)
 	if err != nil {
 		return RestoreResult{}, err
 	}
 
-	stored, err := s.deps.Blobs.Get(ctx, version.BlobID)
+	stored, err := s.params.Blobs.Get(ctx, version.BlobID)
 	if err != nil {
 		return RestoreResult{}, err
 	}
 
-	rc, err := s.deps.Store.Get(ctx, storage.KeyForHash(stored.ContentHash))
+	rc, err := s.params.Store.Get(ctx, storage.KeyForHash(stored.ContentHash))
 	if err != nil {
 		return RestoreResult{}, err
 	}
@@ -76,7 +79,7 @@ func (s *Restore) RestoreObject(
 			Mark(ierr.ErrSourceUnavailable)
 	}
 
-	if err := s.deps.Objects.AddAlias(ctx, objectID, sourceID, newExternalID); err != nil {
+	if err := s.params.Objects.AddAlias(ctx, objectID, sourceID, newExternalID); err != nil {
 		return RestoreResult{}, err
 	}
 
@@ -88,7 +91,7 @@ func (s *Restore) RestoreObject(
 		RestoredFromVersionID: &previous,
 		CapturedAt:            time.Now().UTC(),
 	}
-	if err := s.deps.Objects.CreateVersion(ctx, provenance); err != nil {
+	if err := s.params.Objects.CreateVersion(ctx, provenance); err != nil {
 		return RestoreResult{}, err
 	}
 
