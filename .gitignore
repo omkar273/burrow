@@ -1,0 +1,18 @@
+# mise
+mise.local.toml
+.mise.local.toml
+
+# bun / node
+node_modules/
+*.bun-debug
+
+# build
+dist/
+.turbo/
+.nx/
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

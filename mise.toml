@@ -1,0 +1,34 @@
+# Pin toolchain + tasks. No asdf, no .tool-versions.
+# https://mise.jdx.dev
+
+min_version = "2026.8.0"
+
+[settings]
+lockfile = true
+
+[tools]
+bun = "1"
+
+[env]
+# Project-local; does not leak into the product binary.
+BURROW_ENV = "dev"
+
+[tasks.doctor]
+description = "Show the pinned toolchain"
+run = "mise ls --current && bun --version"
+
+[tasks.install]
+description = "Install JS workspace dependencies"
+run = "bun install"
+
+[tasks.dev]
+description = "Local agent + web (after apps exist)"
+run = "bun run dev"
+
+[tasks.test]
+description = "Run tests"
+run = "bun test"
+
+[tasks.lint]
+description = "Lint"
+run = "bun run lint"

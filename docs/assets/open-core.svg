@@ -1,17 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="220" viewBox="0 0 640 220" role="img" aria-label="Open core plus commercial layer">
-  <rect width="640" height="220" fill="#F7EFE7"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="220" viewBox="0 0 680 220" role="img" aria-label="Open AGPL core plus optional cloud and enterprise">
+  <rect width="680" height="220" fill="#F7EFE7"/>
   <g font-family="ui-sans-serif, system-ui, sans-serif" text-anchor="middle">
-    <rect x="40" y="24" width="280" height="172" rx="18" fill="#fff" stroke="#2E1F1A" stroke-width="1.5"/>
-    <text x="180" y="58" font-size="13" letter-spacing="3" fill="#8B5E3C">AGPLv3</text>
-    <text x="180" y="92" font-size="14" fill="#2E1F1A">Own · Copy · Verify</text>
-    <text x="180" y="116" font-size="14" fill="#2E1F1A">Recover · Export</text>
-    <text x="180" y="156" font-size="12" fill="#6BA67A">open core</text>
+    <rect x="28" y="20" width="300" height="180" rx="20" fill="#fff" stroke="#2E1F1A" stroke-width="1.5"/>
+    <text x="178" y="52" font-size="12" letter-spacing="3" fill="#8B5E3C">AGPLv3</text>
+    <text x="178" y="88" font-size="15" fill="#2E1F1A">Own / Copy / Verify</text>
+    <text x="178" y="112" font-size="15" fill="#2E1F1A">Search / Recover / Export</text>
+    <text x="178" y="160" font-size="12" fill="#6BA67A">everything required to own it</text>
 
-    <text x="340" y="116" font-size="22" fill="#8B5E3C">+</text>
+    <text x="354" y="120" font-size="22" fill="#8B5E3C">+</text>
 
-    <rect x="380" y="48" width="220" height="124" rx="18" fill="#fff" stroke="#D9B895"/>
-    <text x="490" y="96" font-size="14" fill="#2E1F1A">Cloud</text>
-    <text x="490" y="118" font-size="14" fill="#2E1F1A">Enterprise</text>
-    <text x="490" y="148" font-size="12" fill="#8B5E3C">convenience · scale</text>
+    <rect x="392" y="44" width="260" height="132" rx="20" fill="#fff" stroke="#D9B895"/>
+    <text x="522" y="92" font-size="15" fill="#2E1F1A">Cloud</text>
+    <text x="522" y="116" font-size="15" fill="#2E1F1A">Enterprise</text>
+    <text x="522" y="148" font-size="12" fill="#8B5E3C">convenience / scale</text>
   </g>
 </svg>

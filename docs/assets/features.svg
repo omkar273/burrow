@@ -1,33 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="200" viewBox="0 0 720 200" role="img" aria-label="Keep, verify, find, recover">
-  <rect width="720" height="200" fill="#F7EFE7"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="168" viewBox="0 0 760 168" role="img" aria-label="Keep, house, verify, find, recover">
+  <rect width="760" height="168" fill="#F7EFE7"/>
   <g font-family="ui-sans-serif, system-ui, sans-serif" text-anchor="middle">
-    <rect x="8" y="12" width="168" height="176" rx="16" fill="#fff" stroke="#D9B895"/>
-    <circle cx="92" cy="52" r="18" fill="#F7EFE7" stroke="#8B5E3C"/>
-    <path d="M92 44v16M84 52h16" stroke="#8B5E3C" stroke-width="2" fill="none"/>
-    <text x="92" y="96" font-size="12" font-weight="700" fill="#2E1F1A">KEEP A COPY</text>
-    <text x="92" y="122" font-size="11" fill="#8B5E3C">Always have</text>
-    <text x="92" y="138" font-size="11" fill="#8B5E3C">another copy</text>
-
-    <rect x="186" y="12" width="168" height="176" rx="16" fill="#fff" stroke="#D9B895"/>
-    <circle cx="270" cy="52" r="18" fill="#F7EFE7" stroke="#6BA67A"/>
-    <path d="M262 52l6 6 12-14" stroke="#6BA67A" stroke-width="2" fill="none"/>
-    <text x="270" y="96" font-size="12" font-weight="700" fill="#2E1F1A">VERIFY IT</text>
-    <text x="270" y="122" font-size="11" fill="#8B5E3C">Know it's</text>
-    <text x="270" y="138" font-size="11" fill="#8B5E3C">recoverable</text>
-
-    <rect x="364" y="12" width="168" height="176" rx="16" fill="#fff" stroke="#D9B895"/>
-    <circle cx="448" cy="52" r="18" fill="#F7EFE7" stroke="#8B5E3C"/>
-    <circle cx="448" cy="52" r="7" stroke="#8B5E3C" stroke-width="2" fill="none"/>
-    <path d="M454 58l6 6" stroke="#8B5E3C" stroke-width="2"/>
-    <text x="448" y="96" font-size="12" font-weight="700" fill="#2E1F1A">FIND IT</text>
-    <text x="448" y="122" font-size="11" fill="#8B5E3C">Search your</text>
-    <text x="448" y="138" font-size="11" fill="#8B5E3C">own archive</text>
-
-    <rect x="542" y="12" width="168" height="176" rx="16" fill="#fff" stroke="#D9B895"/>
-    <circle cx="626" cy="52" r="18" fill="#F7EFE7" stroke="#8B5E3C"/>
-    <path d="M626 44v12l-5 5M626 56l5 5" stroke="#8B5E3C" stroke-width="2" fill="none"/>
-    <text x="626" y="96" font-size="12" font-weight="700" fill="#2E1F1A">GET IT BACK</text>
-    <text x="626" y="122" font-size="11" fill="#8B5E3C">Restore or</text>
-    <text x="626" y="138" font-size="11" fill="#8B5E3C">export</text>
+    <g>
+      <rect x="8" y="10" width="140" height="148" rx="18" fill="#fff" stroke="#D9B895"/>
+      <circle cx="78" cy="48" r="16" fill="#F7EFE7" stroke="#8B5E3C"/>
+      <path d="M78 40 v16 M70 48 h16" stroke="#8B5E3C" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <text x="78" y="88" font-size="11" font-weight="700" fill="#2E1F1A">KEEP A COPY</text>
+      <text x="78" y="112" font-size="10" fill="#8B5E3C">always another</text>
+      <text x="78" y="126" font-size="10" fill="#8B5E3C">home for it</text>
+    </g>
+    <g>
+      <rect x="156" y="10" width="140" height="148" rx="18" fill="#fff" stroke="#D9B895"/>
+      <ellipse cx="226" cy="52" rx="18" ry="10" fill="#F7EFE7" stroke="#8B5E3C"/>
+      <path d="M208 52 Q226 66 244 52" fill="none" stroke="#8B5E3C" stroke-width="1.5"/>
+      <text x="226" y="88" font-size="11" font-weight="700" fill="#2E1F1A">CHOOSE HOME</text>
+      <text x="226" y="112" font-size="10" fill="#8B5E3C">local, object,</text>
+      <text x="226" y="126" font-size="10" fill="#8B5E3C">or NAS</text>
+    </g>
+    <g>
+      <rect x="304" y="10" width="140" height="148" rx="18" fill="#fff" stroke="#D9B895"/>
+      <circle cx="374" cy="48" r="16" fill="#F7EFE7" stroke="#6BA67A"/>
+      <path d="M366 48 l6 6 12-14" fill="none" stroke="#6BA67A" stroke-width="2" stroke-linecap="round"/>
+      <text x="374" y="88" font-size="11" font-weight="700" fill="#2E1F1A">KNOW IT'S OK</text>
+      <text x="374" y="112" font-size="10" fill="#8B5E3C">intact, checked,</text>
+      <text x="374" y="126" font-size="10" fill="#8B5E3C">recoverable</text>
+    </g>
+    <g>
+      <rect x="452" y="10" width="140" height="148" rx="18" fill="#fff" stroke="#D9B895"/>
+      <circle cx="522" cy="48" r="16" fill="#F7EFE7" stroke="#8B5E3C"/>
+      <circle cx="522" cy="48" r="6" fill="none" stroke="#8B5E3C" stroke-width="2"/>
+      <path d="M527 53 l6 6" stroke="#8B5E3C" stroke-width="2" stroke-linecap="round"/>
+      <text x="522" y="88" font-size="11" font-weight="700" fill="#2E1F1A">FIND IT</text>
+      <text x="522" y="112" font-size="10" fill="#8B5E3C">search your</text>
+      <text x="522" y="126" font-size="10" fill="#8B5E3C">own archive</text>
+    </g>
+    <g>
+      <rect x="600" y="10" width="152" height="148" rx="18" fill="#fff" stroke="#2E1F1A" stroke-width="1.5"/>
+      <circle cx="676" cy="48" r="16" fill="#F7EFE7" stroke="#8B5E3C"/>
+      <rect x="671" y="43" width="10" height="8" rx="1" fill="#D9B895" stroke="#8B5E3C"/>
+      <text x="676" y="88" font-size="11" font-weight="700" fill="#2E1F1A">GET IT BACK</text>
+      <text x="676" y="112" font-size="10" fill="#8B5E3C">restore or</text>
+      <text x="676" y="126" font-size="10" fill="#8B5E3C">leave with it</text>
+    </g>
   </g>
 </svg>

@@ -2,15 +2,28 @@
 
 Palette: `#2E1F1A` `#8B5E3C` `#D9B895` `#F7EFE7` `#6BA67A`
 
-## Published (this folder + repo `logo.png`)
+## Published
 
-Used by the README. Raster scenes are character-only; labels live in Markdown or SVG.
+README rasters are character-only. Labels live in Markdown or SVG.
 
-- **Raster:** `burrow-hero.png`, `burrow-problem.png`, `burrow-meet.png`, `burrow-storage.png`, `burrow-recovery.png`, repo `logo.png`
-- **SVG:** `aha.svg`, `features.svg`, `open-core.svg`, plus Mermaid in the README
-- No text, buttons, or vendor marks in raster art
-- No shields, locks, cloud-vendor marks, or database cylinders
+| File | Role |
+| --- | --- |
+| `logo.png` (repo root) + `mascot.png` | GitHub avatar / footer |
+| `burrow-hero.png` | Hero scene |
+| `burrow-problem.png` | Scattered sources |
+| `burrow-storage.png` | Three homes |
+| `burrow-recovery.png` | Retrieving a copy |
+| `social-preview.png` | GitHub Open Graph (wordmark allowed) |
+| `sources.svg` | Problem labels |
+| `aha.svg` | Access ≠ sync ≠ recovery |
+| `ownership.svg` | Sources → Burrow → your storage |
+| `loop.svg` | Connect → export |
+| `features.svg` | Five capabilities |
+| `verified.svg` | Synced / verified / recoverable |
+| `open-core.svg` | AGPL + cloud / enterprise |
+
+No shields, locks, vendor marks, or database cylinders in artwork. No product copy inside character scenes.
 
 ## Explorations (`brand/explorations/`)
 
-Dated ChatGPT landing-page composites. Keep for brand history. Do not embed in the README — they bake in copy, CTAs, and SaaS logos.
+Landing-page composites and earlier README rasters. Do not embed in the README.

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="120" viewBox="0 0 760 120" role="img" aria-label="Connect, copy, verify, search, recover, export">
+  <rect width="760" height="120" fill="#F7EFE7"/>
+  <g font-family="ui-sans-serif, system-ui, sans-serif" text-anchor="middle">
+    <path d="M70 48 H690" fill="none" stroke="#D9B895" stroke-width="2"/>
+    <g font-size="11" letter-spacing="1.5" fill="#2E1F1A">
+      <circle cx="70" cy="48" r="10" fill="#2E1F1A"/>
+      <text x="70" y="84">CONNECT</text>
+      <circle cx="194" cy="48" r="10" fill="#8B5E3C"/>
+      <text x="194" y="84">COPY</text>
+      <circle cx="318" cy="48" r="10" fill="#6BA67A"/>
+      <text x="318" y="84">VERIFY</text>
+      <circle cx="442" cy="48" r="10" fill="#8B5E3C"/>
+      <text x="442" y="84">SEARCH</text>
+      <circle cx="566" cy="48" r="10" fill="#2E1F1A"/>
+      <text x="566" y="84">RECOVER</text>
+      <circle cx="690" cy="48" r="10" fill="#D9B895" stroke="#2E1F1A"/>
+      <text x="690" y="84">EXPORT</text>
+    </g>
+  </g>
+</svg>

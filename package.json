@@ -1,0 +1,10 @@
+{
+  "name": "burrow",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "echo \"apps/ not scaffolded yet — next: agent + web\" && exit 1",
+    "lint": "echo \"no linter yet\" && exit 1"
+  }
+}

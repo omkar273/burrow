@@ -1,14 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="160" viewBox="0 0 720 160" role="img" aria-label="Access and sync are not recovery">
-  <rect width="720" height="160" fill="#F7EFE7"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="168" viewBox="0 0 720 168" role="img" aria-label="Access and sync are not recovery">
+  <rect width="720" height="168" fill="#F7EFE7"/>
   <g font-family="ui-sans-serif, system-ui, sans-serif" text-anchor="middle">
-    <rect x="16" y="16" width="216" height="128" rx="16" fill="#fff" stroke="#D9B895"/>
-    <text x="124" y="64" font-size="13" fill="#8B5E3C" letter-spacing="2">ACCESS</text>
-    <text x="124" y="104" font-size="28" fill="#6BA67A"></text>
-    <rect x="252" y="16" width="216" height="128" rx="16" fill="#fff" stroke="#D9B895"/>
-    <text x="360" y="64" font-size="13" fill="#8B5E3C" letter-spacing="2">SYNC</text>
-    <text x="360" y="104" font-size="28" fill="#6BA67A"></text>
-    <rect x="488" y="16" width="216" height="128" rx="16" fill="#fff" stroke="#2E1F1A" stroke-width="1.5"/>
-    <text x="596" y="64" font-size="13" fill="#8B5E3C" letter-spacing="2">RECOVERY</text>
-    <text x="596" y="104" font-size="28" fill="#2E1F1A">?</text>
+    <rect x="12" y="12" width="224" height="144" rx="20" fill="#fff" stroke="#D9B895"/>
+    <text x="124" y="52" font-size="12" letter-spacing="3" fill="#8B5E3C">ACCESS</text>
+    <circle cx="124" cy="96" r="22" fill="#F7EFE7"/>
+    <path d="M114 96 l7 7 14-16" fill="none" stroke="#6BA67A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="124" y="140" font-size="11" fill="#8B5E3C">you can open it</text>
+
+    <rect x="248" y="12" width="224" height="144" rx="20" fill="#fff" stroke="#D9B895"/>
+    <text x="360" y="52" font-size="12" letter-spacing="3" fill="#8B5E3C">SYNC</text>
+    <circle cx="360" cy="96" r="22" fill="#F7EFE7"/>
+    <path d="M350 96 l7 7 14-16" fill="none" stroke="#6BA67A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="360" y="140" font-size="11" fill="#8B5E3C">a job finished</text>
+
+    <rect x="484" y="12" width="224" height="144" rx="20" fill="#fff" stroke="#2E1F1A" stroke-width="1.5"/>
+    <text x="596" y="52" font-size="12" letter-spacing="3" fill="#8B5E3C">RECOVERY</text>
+    <circle cx="596" cy="96" r="22" fill="#2E1F1A"/>
+    <text x="596" y="104" font-size="22" fill="#F7EFE7">?</text>
+    <text x="596" y="140" font-size="11" fill="#2E1F1A">can you get it back?</text>
   </g>
 </svg>

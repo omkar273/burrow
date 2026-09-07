@@ -33,13 +33,9 @@
   <img src="docs/assets/burrow-problem.png" alt="Mascot looking up at scattered, unowned data" width="720" />
 </p>
 
-```text
- Gmail      Drive      Slack      GitHub
-   ↓          ↓          ↓           ↓
-        Your business lives here.
-                    ?
-        Where's your independent copy?
-```
+<p align="center">
+  <img src="docs/assets/sources.svg" alt="Gmail, Drive, Slack, GitHub — where is the independent copy?" />
+</p>
 
 <p align="center"><strong>Your business runs on SaaS. Your independent copy shouldn't have to.</strong></p>
 
@@ -75,7 +71,7 @@ A backup isn't a backup until you know you can recover from it.
 ## Meet Burrow
 
 <p align="center">
-  <img src="docs/assets/burrow-meet.png" alt="Sources flowing into Burrow, then out to storage you control" width="920" />
+  <img src="docs/assets/ownership.svg" alt="Mail, docs, chat, and code copy into Burrow, then out to local, object, or NAS storage" />
 </p>
 
 <p align="center"><strong>Burrow gives your data another home.</strong></p>
@@ -87,16 +83,11 @@ A backup isn't a backup until you know you can recover from it.
 
 ---
 
-## The loop
+## Copy. Verify. Recover.
 
-```mermaid
-flowchart TD
-  A[CONNECT] --> B[COPY]
-  B --> C[VERIFY]
-  C --> D[SEARCH]
-  D --> E[RECOVER]
-  E --> F[EXPORT]
-```
+<p align="center">
+  <img src="docs/assets/loop.svg" alt="Connect, copy, verify, search, recover, export" />
+</p>
 
 <details>
 <summary>CONNECT</summary>
@@ -148,19 +139,22 @@ Leave with the archive. Secrets stay out of the plaintext dump.
   <img src="docs/assets/burrow-storage.png" alt="Mascot in front of three burrow openings — local, object storage, NAS" width="920" />
 </p>
 
-```text
-     Local FS          S3 / R2            NAS
-        └───────────────┬───────────────┘
-                        │
-                     Burrow
-```
+<p align="center"><strong>Bring your own storage. Keep it portable. Leave whenever you want.</strong></p>
 
-<p align="center"><strong>Burrow doesn't need to become the owner of your backup.</strong></p>
+<p align="center">Burrow shouldn't become another lock-in.</p>
+
+```text
+Typical path                         Burrow
+
+SaaS → vendor → vendor storage       SaaS → Burrow → YOUR STORAGE
+              ↑                                         ↑
+         dependency                                independent
+```
 
 ---
 
 <p align="center">
-  <img src="docs/assets/features.svg" alt="Keep a copy, verify it, find it, get it back" />
+  <img src="docs/assets/features.svg" alt="Keep a copy, choose the home, know it's healthy, find it, get it back" />
 </p>
 
 ---
@@ -171,26 +165,15 @@ Leave with the archive. Secrets stay out of the plaintext dump.
   <img src="docs/assets/burrow-recovery.png" alt="Mascot emerging from the burrow carrying a data box" width="560" />
 </p>
 
+<p align="center">
+  <img src="docs/assets/verified.svg" alt="Synced, verified, recoverable" />
+</p>
+
 <p align="center"><strong>Recovery is the point.</strong></p>
 
 <p align="center">
-  Burrow treats recoverability as a first-class product property.<br/>
   Intact objects. Matching checksums. A restore you have actually done.
 </p>
-
-```text
-Typical path                         Burrow
-
-Your data                            Your data
-    ↓                                    ↓
-Provider                             Burrow
-    ↓                                    ↓
-Provider storage                     Your storage
-    ↓                                    ↓
-Provider recovery                    Your independent copy
-```
-
-Burrow should never become the next place you're locked into.
 
 ---
 
@@ -198,9 +181,10 @@ Burrow should never become the next place you're locked into.
 
 ```mermaid
 flowchart TD
-  S[Sources] --> I[Ingestion]
-  I --> O[Canonical objects]
-  O --> ST[Storage]
+  S[Sources] --> C[Connectors]
+  C --> O[Canonical objects]
+  O --> Q[State / queue]
+  Q --> ST[Your storage]
   ST --> V[Verify]
   ST --> X[Index]
   V --> R[Recover]
@@ -233,8 +217,9 @@ Current implementation direction: TypeScript, Bun for local dev and the first lo
 
 | | |
 | --- | --- |
-| **Ownership** | Storage is yours and replaceable. |
-| **Portability** | Export reconstructs logical state, not a Docker volume. |
+| **Local-first** | The core does not assume the copy lives in our cloud. |
+| **Storage-agnostic** | Storage is an abstraction, not a vendor. |
+| **Runtime-independent** | Same engine locally or hosted. |
 | **Recoverability** | Restore is the acceptance test. |
 | **Reliability** | Checkpoints, reconcile, retries. Boring on purpose. |
 
@@ -285,16 +270,19 @@ Drive, Microsoft 365, Slack, GitHub, Notion are **roadmap names**, not connector
 
 <a id="get-your-burrow-running"></a>
 
-Nothing production-ready to install yet. Intended developer flow:
+Nothing production-ready to run yet. Toolchain is [mise](https://mise.jdx.dev); `make` is the command surface.
 
 ```bash
+# once: brew install mise
+# echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
+
 git clone https://github.com/<org>/burrow.git   # TODO: canonical remote
 cd burrow
-bun install                                     # TODO
-bun dev                                         # TODO
+make install    # mise install + bun install
+make doctor
 ```
 
-<!-- TODO: docs, Docker, CI badge -->
+`make dev` waits until `apps/agent` and `apps/web` exist.
 
 ---
 
@@ -305,13 +293,11 @@ bun dev                                         # TODO
 Useful work: the Gmail loop, storage adapters, tests that fail when restore would fail.
 
 ```bash
-bun test          # TODO
-bun run lint      # TODO
+make test
+make lint
 ```
 
 Open an issue before large design changes.
-
-<!-- TODO: CONTRIBUTING.md -->
 
 <p align="center">
   <img src="logo.png" width="72" alt="" />

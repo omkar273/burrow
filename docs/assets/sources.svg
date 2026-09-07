@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="200" viewBox="0 0 720 200" role="img" aria-label="Business data lives in SaaS; the independent copy is missing">
+  <rect width="720" height="200" fill="#F7EFE7"/>
+  <g font-family="ui-sans-serif, system-ui, sans-serif" text-anchor="middle">
+    <g fill="#fff" stroke="#D9B895">
+      <rect x="24" y="16" width="150" height="52" rx="14"/>
+      <rect x="198" y="16" width="150" height="52" rx="14"/>
+      <rect x="372" y="16" width="150" height="52" rx="14"/>
+      <rect x="546" y="16" width="150" height="52" rx="14"/>
+    </g>
+    <g font-size="15" fill="#2E1F1A">
+      <text x="99" y="48">Gmail</text>
+      <text x="273" y="48">Drive</text>
+      <text x="447" y="48">Slack</text>
+      <text x="621" y="48">GitHub</text>
+    </g>
+    <g stroke="#8B5E3C" stroke-width="1.5" fill="none">
+      <path d="M99 68 V96"/>
+      <path d="M273 68 V96"/>
+      <path d="M447 68 V96"/>
+      <path d="M621 68 V96"/>
+      <path d="M99 96 H621"/>
+      <path d="M360 96 V118"/>
+    </g>
+    <text x="360" y="142" font-size="15" fill="#2E1F1A">Your business lives here.</text>
+    <text x="360" y="172" font-size="22" fill="#2E1F1A">?</text>
+    <text x="360" y="194" font-size="13" fill="#8B5E3C">Where is your independent copy?</text>
+  </g>
+</svg>
