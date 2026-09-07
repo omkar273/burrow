@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/gofrs/flock"
 
@@ -36,6 +37,15 @@ func MigrationPlan(ctx context.Context, cfg Config) ([]Migration, error) {
 			out = append(out, Migration{Name: p.Name, SQL: p.SQL})
 		}
 		return out, nil
+	})
+}
+
+// SchemaVersion reports how many migrations this archive has applied. It is
+// stored in SQLite's user_version header, readable by any SQLite tool, and is
+// the version the portable archive bundle carries.
+func SchemaVersion(ctx context.Context, cfg Config) (int, error) {
+	return withMigrationDB(ctx, cfg, func(c *entrepo.Client) (int, error) {
+		return c.Version(ctx)
 	})
 }
 
@@ -117,4 +127,14 @@ func TableNames(ctx context.Context, cfg Config) ([]string, error) {
 		}
 		return names, rows.Err()
 	})
+}
+
+// SetSchemaVersionForTest forces the recorded schema version. It exists so
+// tests can simulate an archive written by a newer build.
+func SetSchemaVersionForTest(ctx context.Context, cfg Config, v int) error {
+	_, err := withMigrationDB(ctx, cfg, func(c *entrepo.Client) (struct{}, error) {
+		_, err := c.DB().ExecContext(ctx, "PRAGMA user_version = "+strconv.Itoa(v)+";")
+		return struct{}{}, err
+	})
+	return err
 }

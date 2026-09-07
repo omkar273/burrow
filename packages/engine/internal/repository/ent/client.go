@@ -73,3 +73,7 @@ func (c *Client) ListPending(ctx context.Context) ([]Pending, error) {
 func (c *Client) ApplyPending(ctx context.Context) ([]string, error) {
 	return ApplyPending(ctx, c.db)
 }
+
+func (c *Client) Version(ctx context.Context) (int, error) {
+	return Version(ctx, c.db)
+}

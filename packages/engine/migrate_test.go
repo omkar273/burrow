@@ -100,3 +100,46 @@ func TestMigrationPlanLeavesTheDatabaseUntouched(t *testing.T) {
 		t.Fatalf("dry run created %v", tables)
 	}
 }
+
+func TestSchemaVersionAdvancesWithMigrations(t *testing.T) {
+	home := t.TempDir()
+	ctx := context.Background()
+
+	before, err := engine.SchemaVersion(ctx, engine.Config{Home: home})
+	if err != nil {
+		t.Fatalf("SchemaVersion: %v", err)
+	}
+	if before != 0 {
+		t.Fatalf("fresh archive at version %d, want 0", before)
+	}
+
+	applied, err := engine.Migrate(ctx, engine.Config{Home: home})
+	if err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+
+	after, err := engine.SchemaVersion(ctx, engine.Config{Home: home})
+	if err != nil {
+		t.Fatalf("SchemaVersion after Migrate: %v", err)
+	}
+	if after != len(applied) {
+		t.Fatalf("version %d after applying %d migrations", after, len(applied))
+	}
+}
+
+// An archive written by a newer Burrow must be refused, not half-read.
+func TestArchiveFromANewerBuildIsRefused(t *testing.T) {
+	home := t.TempDir()
+	ctx := context.Background()
+
+	if _, err := engine.Migrate(ctx, engine.Config{Home: home}); err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+	if err := engine.SetSchemaVersionForTest(ctx, engine.Config{Home: home}, 9999); err != nil {
+		t.Fatalf("bumping version: %v", err)
+	}
+
+	if _, err := engine.MigrationPlan(ctx, engine.Config{Home: home}); err == nil {
+		t.Fatal("an archive from a newer build was accepted")
+	}
+}

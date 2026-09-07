@@ -6,6 +6,7 @@ import (
 	"embed"
 	"io/fs"
 	"sort"
+	"strconv"
 	"strings"
 
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
@@ -14,49 +15,58 @@ import (
 //go:embed all:migrations
 var migrationFS embed.FS
 
-// applyVersioned runs every .sql migration not yet recorded, in filename
-// order, each in its own transaction.
-//
-// Versioned migrations rather than ent's auto-migrate because the schema
-// is a portability contract: the archive bundle carries a schema version
-// and another Burrow runtime must reconstruct state from it. Auto-migrate
-// would make the schema an unversioned side effect of Go structs.
-// Pending is a migration that has not been recorded in schema_version.
+// Pending is a migration the database has not applied.
 type Pending struct {
 	Name string
 	SQL  string
 }
 
-// ListPending reports what applyVersioned would run, without running it.
-func ListPending(ctx context.Context, db *sql.DB) ([]Pending, error) {
-	// Deliberately does not create schema_version: a dry run must leave the
-	// database untouched. A missing table simply means nothing is applied.
-	var bookkept bool
-	if err := db.QueryRowContext(ctx,
-		`SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = 'schema_version'`,
-	).Scan(&bookkept); err != nil {
-		return nil, ierr.Wrap(err, "checking migration bookkeeping").Mark(ierr.ErrInternal)
+// Version is how many migrations a database has applied. It lives in
+// SQLite's user_version header field, so any SQLite tool can read it and no
+// bookkeeping table can drift from the schema it describes.
+//
+// This is the schema version the portable archive bundle carries: an archive
+// is readable by any Burrow whose migration set is at least this long.
+func Version(ctx context.Context, db *sql.DB) (int, error) {
+	var v int
+	if err := db.QueryRowContext(ctx, "PRAGMA user_version;").Scan(&v); err != nil {
+		return 0, ierr.Wrap(err, "reading schema version").Mark(ierr.ErrInternal)
 	}
+	return v, nil
+}
 
-	entries, err := fs.Glob(migrationFS, "migrations/*.sql")
+func migrationFiles() ([]string, error) {
+	names, err := fs.Glob(migrationFS, "migrations/*.sql")
 	if err != nil {
 		return nil, ierr.Wrap(err, "listing migrations").Mark(ierr.ErrInternal)
 	}
-	sort.Strings(entries)
+	sort.Strings(names)
+	return names, nil
+}
 
-	var pending []Pending
-	for _, name := range entries {
-		if bookkept {
-			var seen int
-			if err := db.QueryRowContext(ctx,
-				`SELECT COUNT(1) FROM schema_version WHERE filename = ?`, name,
-			).Scan(&seen); err != nil {
-				return nil, ierr.Wrap(err, "checking migration "+name).Mark(ierr.ErrInternal)
-			}
-			if seen > 0 {
-				continue
-			}
-		}
+// ListPending reports what ApplyPending would run, without running it or
+// writing anything.
+func ListPending(ctx context.Context, db *sql.DB) ([]Pending, error) {
+	if err := adoptLegacyBookkeeping(ctx, db); err != nil {
+		return nil, err
+	}
+	applied, err := Version(ctx, db)
+	if err != nil {
+		return nil, err
+	}
+	names, err := migrationFiles()
+	if err != nil {
+		return nil, err
+	}
+	if applied > len(names) {
+		return nil, ierr.New("database is at schema version " + strconv.Itoa(applied) +
+			" but this build only has " + strconv.Itoa(len(names)) + " migrations").
+			WithHint("this archive was written by a newer Burrow; upgrade before opening it").
+			Mark(ierr.ErrValidation)
+	}
+
+	pending := make([]Pending, 0, len(names)-applied)
+	for _, name := range names[applied:] {
 		body, err := migrationFS.ReadFile(name)
 		if err != nil {
 			return nil, ierr.Wrap(err, "reading migration "+name).Mark(ierr.ErrInternal)
@@ -66,97 +76,85 @@ func ListPending(ctx context.Context, db *sql.DB) ([]Pending, error) {
 	return pending, nil
 }
 
-func ensureBookkeeping(ctx context.Context, db *sql.DB) error {
-	if _, err := db.ExecContext(ctx,
-		`CREATE TABLE IF NOT EXISTS schema_version (
-			filename TEXT PRIMARY KEY,
-			applied_at TEXT NOT NULL
-		);`); err != nil {
-		return ierr.Wrap(err, "creating schema_version table").Mark(ierr.ErrInternal)
-	}
-	return nil
-}
-
-// ApplyPending applies every unapplied migration and returns their names.
+// ApplyPending applies every unapplied migration in one transaction and
+// returns their names.
+//
+// user_version is transactional in SQLite, so the DDL and the version bump
+// commit or roll back together. A crash mid-migration therefore leaves the
+// database exactly as it was, and two processes cannot both claim the same
+// migration.
 func ApplyPending(ctx context.Context, db *sql.DB) ([]string, error) {
-	if err := ensureBookkeeping(ctx, db); err != nil {
-		return nil, err
-	}
 	pending, err := ListPending(ctx, db)
 	if err != nil {
 		return nil, err
 	}
+	if len(pending) == 0 {
+		return nil, nil
+	}
+	names, err := migrationFiles()
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, ierr.Wrap(err, "beginning migration").Mark(ierr.ErrInternal)
+	}
+	defer tx.Rollback() //nolint:errcheck // no-op once committed
+
 	applied := make([]string, 0, len(pending))
 	for _, m := range pending {
-		if err := applyOne(ctx, db, m.Name, m.SQL); err != nil {
-			return applied, err
+		for _, stmt := range strings.Split(m.SQL, ";") {
+			if strings.TrimSpace(stmt) == "" {
+				continue
+			}
+			if _, err := tx.ExecContext(ctx, stmt); err != nil {
+				return nil, ierr.Wrap(err, "applying migration "+m.Name).Mark(ierr.ErrInternal)
+			}
 		}
 		applied = append(applied, m.Name)
+	}
+
+	// Pragmas take no bound parameters; the value is a computed count.
+	if _, err := tx.ExecContext(ctx, "PRAGMA user_version = "+strconv.Itoa(len(names))+";"); err != nil {
+		return nil, ierr.Wrap(err, "recording schema version").Mark(ierr.ErrInternal)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, ierr.Wrap(err, "committing migrations").Mark(ierr.ErrInternal)
 	}
 	return applied, nil
 }
 
-func applyVersioned(ctx context.Context, db *sql.DB) error {
-	if err := ensureBookkeeping(ctx, db); err != nil {
-		return err
+// adoptLegacyBookkeeping converts a database written before user_version
+// replaced the schema_version table, then drops the table.
+//
+// Burrow has no released version, so this exists only for archives created
+// during development. It can go once none are left.
+func adoptLegacyBookkeeping(ctx context.Context, db *sql.DB) error {
+	var present int
+	if err := db.QueryRowContext(ctx,
+		`SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = 'schema_version'`,
+	).Scan(&present); err != nil {
+		return ierr.Wrap(err, "checking for legacy bookkeeping").Mark(ierr.ErrInternal)
+	}
+	if present == 0 {
+		return nil
 	}
 
-	entries, err := fs.Glob(migrationFS, "migrations/*.sql")
-	if err != nil {
-		return ierr.Wrap(err, "listing migrations").Mark(ierr.ErrInternal)
+	var rows int
+	if err := db.QueryRowContext(ctx, `SELECT COUNT(1) FROM schema_version`).Scan(&rows); err != nil {
+		return ierr.Wrap(err, "reading legacy bookkeeping").Mark(ierr.ErrInternal)
 	}
-	sort.Strings(entries)
-
-	for _, name := range entries {
-		body, err := migrationFS.ReadFile(name)
-		if err != nil {
-			return ierr.Wrap(err, "reading migration "+name).Mark(ierr.ErrInternal)
-		}
-		if err := applyOne(ctx, db, name, string(body)); err != nil {
-			return err
-		}
+	if _, err := db.ExecContext(ctx, "PRAGMA user_version = "+strconv.Itoa(rows)+";"); err != nil {
+		return ierr.Wrap(err, "adopting legacy schema version").Mark(ierr.ErrInternal)
+	}
+	if _, err := db.ExecContext(ctx, `DROP TABLE schema_version`); err != nil {
+		return ierr.Wrap(err, "dropping legacy bookkeeping").Mark(ierr.ErrInternal)
 	}
 	return nil
 }
 
-// applyOne claims a migration by inserting its bookkeeping row first, inside
-// the same transaction that runs it.
-//
-// Checking schema_version before opening the transaction would let two
-// processes both observe the migration as unapplied; the loser then runs a
-// non-idempotent CREATE TABLE and fails. INSERT OR IGNORE makes the claim and
-// the check one atomic step, and a rollback releases it.
-func applyOne(ctx context.Context, db *sql.DB, name, body string) error {
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return ierr.Wrap(err, "beginning migration "+name).Mark(ierr.ErrInternal)
-	}
-	defer tx.Rollback() //nolint:errcheck // no-op once committed
-
-	res, err := tx.ExecContext(ctx,
-		`INSERT OR IGNORE INTO schema_version (filename, applied_at) VALUES (?, datetime('now'))`,
-		name)
-	if err != nil {
-		return ierr.Wrap(err, "claiming migration "+name).Mark(ierr.ErrInternal)
-	}
-	claimed, err := res.RowsAffected()
-	if err != nil {
-		return ierr.Wrap(err, "claiming migration "+name).Mark(ierr.ErrInternal)
-	}
-	if claimed == 0 {
-		return nil // already applied
-	}
-
-	for _, stmt := range strings.Split(body, ";") {
-		if strings.TrimSpace(stmt) == "" {
-			continue
-		}
-		if _, err := tx.ExecContext(ctx, stmt); err != nil {
-			return ierr.Wrap(err, "applying migration "+name).Mark(ierr.ErrInternal)
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return ierr.Wrap(err, "committing migration "+name).Mark(ierr.ErrInternal)
-	}
-	return nil
+func applyVersioned(ctx context.Context, db *sql.DB) error {
+	_, err := ApplyPending(ctx, db)
+	return err
 }

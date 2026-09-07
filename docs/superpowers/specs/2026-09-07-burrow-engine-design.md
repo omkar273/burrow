@@ -23,7 +23,7 @@ The handoff's §23 "V1 must have" list is six independent subsystems. It is deco
 |---|---|---|
 | D1 | **Go** for the engine; TypeScript stays in `packages/web` | Single static binary, no runtime to install on a NAS. Resolves handoff §41, which left language open. |
 | D2 | **Hexagonal / ports-and-adapters**, layer rules written into AGENTS.md | `domain/` holds models + interfaces with zero external deps; adapters implement them. Layer table format adopted from FlexPrice. |
-| D3 | **ent** ORM + **Atlas versioned migrations**; never `Schema.Create` auto-migrate | The SQLite schema is a published portability contract (§10 of the handoff — the archive bundle carries `schema-version`). Auto-migrate makes the schema an unversioned side effect of Go structs. |
+| D3 | **ent** ORM + **Atlas versioned migrations**; never `Schema.Create` auto-migrate. Version tracked in SQLite's `PRAGMA user_version` | The SQLite schema is a published portability contract (§10 of the handoff — the archive bundle carries a schema version). Auto-migrate makes the schema an unversioned side effect of Go structs, leaving no way to answer "can another Burrow read this archive?". `user_version` is a 4-byte field in the SQLite header: no bookkeeping table to drift from the schema it describes, readable by any SQLite tool, and transactional, so DDL and the version bump commit or roll back together. |
 | D4 | **modernc.org/sqlite**, registered under the `sqlite3` driver name | Pure Go, FTS5 included, cross-compiles from macOS to Linux/ARM. A cgo driver forfeits the single-binary story. Needs a ~30-line wrapper because mattn registers as `sqlite3` and modernc as `sqlite`. |
 | D5 | **uber fx** for DI, composed from **per-package `fx.Module`s** | `fx.Lifecycle` gives ordered start/stop for background workers. Per-package modules keep `main.go` at ~40 lines — FlexPrice's rule of registering everything in `main.go` produced a 734-line file. |
 | D6 | **The blob is the raw `.eml`**; everything else is derived index | `messages.insert` takes raw RFC822 with IMAP-APPEND semantics, so we restore exactly the bytes we stored and byte-equality is directly assertable. A `.eml` also opens in any mail client with no Burrow installed — the portability property. |
@@ -116,6 +116,20 @@ Gmail's message ID is none of these. It is `external_id`: a provider fact we rec
 Chain: `Object → ObjectVersion → Blob → Replica[]`.
 
 `Blob` holds `(content_hash, size_bytes)` and knows nothing about backends. `Replica` holds `(blob, backend, key, state, last_verified_at)`. That separation *is* handoff §8's "one logical copy, many physical replicas" — it is what allows adding, repairing, or migrating a backend without touching restore.
+
+### Schema version
+
+The archive's schema version is the count of applied migrations, held in
+SQLite's `user_version` header field. There is no bookkeeping table.
+
+Three properties follow. It cannot disagree with the schema, because there is
+no second record to drift. It is readable by anything that opens a SQLite file,
+including tools that have never heard of Burrow. And because `user_version` is
+transactional, a migration's DDL and its version bump commit or roll back
+together — a crash mid-migration leaves the archive exactly as it was.
+
+Opening an archive whose version exceeds this build's migration count is
+refused rather than half-read: that archive was written by a newer Burrow.
 
 ### The truth/derived rule
 
