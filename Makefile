@@ -35,3 +35,14 @@ lint: ## Lint
 	$(MISE) run lint
 
 check: lint test ## Lint then test
+
+.PHONY: generate-ent generate-migration
+generate-ent: ## Regenerate ent code from ent/schema
+	go run -mod=mod entgo.io/ent/cmd/ent generate ./ent/schema
+
+generate-migration: ## Generate a versioned Atlas migration (NAME=<name>)
+	$(MISE) exec -- atlas migrate diff $(NAME) \
+		--dir "file://migrations/versioned" \
+		--to "ent://ent/schema" \
+		--dev-url "sqlite://dev?mode=memory&_fk=1"
+	cp migrations/versioned/*.sql internal/repository/ent/migrations/

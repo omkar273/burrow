@@ -2,6 +2,55 @@
 
 lockfile_version = 1
 
+[[tools.atlas]]
+version = "1.3.0"
+backend = "aqua:ariga/atlas"
+specifiers = ["latest"]
+
+[tools.atlas."platforms.linux-arm64"]
+checksum = "sha256:d2cfb1c71e58170bb4ddbe62107a38da4490f516ffa53a13abf57583819b6a40"
+url = "https://release.ariga.io/atlas/atlas-linux-arm64-v1.3.0"
+
+[tools.atlas."platforms.linux-arm64-musl"]
+checksum = "sha256:d2cfb1c71e58170bb4ddbe62107a38da4490f516ffa53a13abf57583819b6a40"
+url = "https://release.ariga.io/atlas/atlas-linux-arm64-v1.3.0"
+
+[tools.atlas."platforms.linux-x64"]
+checksum = "sha256:cfc773e5b4e845bc01d680390c174648938a7f88bf30e5a2c83ae85217c21587"
+url = "https://release.ariga.io/atlas/atlas-linux-amd64-v1.3.0"
+
+[tools.atlas."platforms.linux-x64-baseline"]
+checksum = "sha256:cfc773e5b4e845bc01d680390c174648938a7f88bf30e5a2c83ae85217c21587"
+url = "https://release.ariga.io/atlas/atlas-linux-amd64-v1.3.0"
+
+[tools.atlas."platforms.linux-x64-musl"]
+checksum = "sha256:cfc773e5b4e845bc01d680390c174648938a7f88bf30e5a2c83ae85217c21587"
+url = "https://release.ariga.io/atlas/atlas-linux-amd64-v1.3.0"
+
+[tools.atlas."platforms.linux-x64-musl-baseline"]
+checksum = "sha256:cfc773e5b4e845bc01d680390c174648938a7f88bf30e5a2c83ae85217c21587"
+url = "https://release.ariga.io/atlas/atlas-linux-amd64-v1.3.0"
+
+[tools.atlas."platforms.macos-arm64"]
+checksum = "sha256:47aaf7c295c7569c7eecfcbc53f02de862846ce1fbef16f1bd8ae98b03c3c68f"
+url = "https://release.ariga.io/atlas/atlas-darwin-arm64-v1.3.0"
+
+[tools.atlas."platforms.macos-x64"]
+checksum = "sha256:4b4d8621332eabc3e6e7554d799a98ceef6376c4d8bbad6ed7832b49655e3480"
+url = "https://release.ariga.io/atlas/atlas-darwin-amd64-v1.3.0"
+
+[tools.atlas."platforms.macos-x64-baseline"]
+checksum = "sha256:4b4d8621332eabc3e6e7554d799a98ceef6376c4d8bbad6ed7832b49655e3480"
+url = "https://release.ariga.io/atlas/atlas-darwin-amd64-v1.3.0"
+
+[tools.atlas."platforms.windows-x64"]
+checksum = "sha256:19b3bf812be93d1b30d7199c5700af01002cbd606c2aec2394fd618af7e3f7b1"
+url = "https://release.ariga.io/atlas/atlas-windows-amd64-v1.3.0.exe"
+
+[tools.atlas."platforms.windows-x64-baseline"]
+checksum = "sha256:19b3bf812be93d1b30d7199c5700af01002cbd606c2aec2394fd618af7e3f7b1"
+url = "https://release.ariga.io/atlas/atlas-windows-amd64-v1.3.0.exe"
+
 [[tools.bun]]
 version = "1.4.2"
 backend = "core:bun"
@@ -50,3 +99,52 @@ url = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.2/bun-windows-x
 [tools.bun."platforms.windows-x64-baseline"]
 checksum = "sha256:78c221c2376f79731ccf4e4af0b3bb46d81fefa3296c5abee09ad8a1b21e68c6"
 url = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.2/bun-windows-x64-baseline.zip"
+
+[[tools.go]]
+version = "1.25.14"
+backend = "core:go"
+specifiers = ["1.25"]
+
+[tools.go."platforms.linux-arm64"]
+checksum = "sha256:9bf234ea70ffec9347fdf6b22ce4add51717d3386a38a441e8c8743fceb5eaee"
+url = "https://dl.google.com/go/go1.25.14.linux-arm64.tar.gz"
+
+[tools.go."platforms.linux-arm64-musl"]
+checksum = "sha256:9bf234ea70ffec9347fdf6b22ce4add51717d3386a38a441e8c8743fceb5eaee"
+url = "https://dl.google.com/go/go1.25.14.linux-arm64.tar.gz"
+
+[tools.go."platforms.linux-x64"]
+checksum = "sha256:a21ae5633a269bcd7e90cf767e48225633795e99d831742cbf3397064fee7712"
+url = "https://dl.google.com/go/go1.25.14.linux-amd64.tar.gz"
+
+[tools.go."platforms.linux-x64-baseline"]
+checksum = "sha256:a21ae5633a269bcd7e90cf767e48225633795e99d831742cbf3397064fee7712"
+url = "https://dl.google.com/go/go1.25.14.linux-amd64.tar.gz"
+
+[tools.go."platforms.linux-x64-musl"]
+checksum = "sha256:a21ae5633a269bcd7e90cf767e48225633795e99d831742cbf3397064fee7712"
+url = "https://dl.google.com/go/go1.25.14.linux-amd64.tar.gz"
+
+[tools.go."platforms.linux-x64-musl-baseline"]
+checksum = "sha256:a21ae5633a269bcd7e90cf767e48225633795e99d831742cbf3397064fee7712"
+url = "https://dl.google.com/go/go1.25.14.linux-amd64.tar.gz"
+
+[tools.go."platforms.macos-arm64"]
+checksum = "sha256:5b26c0b6f308240fca2614fb02f622cfcc8c0cc3b69c78bba4845489a4590259"
+url = "https://dl.google.com/go/go1.25.14.darwin-arm64.tar.gz"
+
+[tools.go."platforms.macos-x64"]
+checksum = "sha256:b09087a67d5792a8b0fcbf74212d62560c94ac8a8fd750ff920d8cb5f1e20118"
+url = "https://dl.google.com/go/go1.25.14.darwin-amd64.tar.gz"
+
+[tools.go."platforms.macos-x64-baseline"]
+checksum = "sha256:b09087a67d5792a8b0fcbf74212d62560c94ac8a8fd750ff920d8cb5f1e20118"
+url = "https://dl.google.com/go/go1.25.14.darwin-amd64.tar.gz"
+
+[tools.go."platforms.windows-x64"]
+checksum = "sha256:119044a92b3987c341cd6aebb256676dd4780d292f7b4e72a3e9976677841697"
+url = "https://dl.google.com/go/go1.25.14.windows-amd64.zip"
+
+[tools.go."platforms.windows-x64-baseline"]
+checksum = "sha256:119044a92b3987c341cd6aebb256676dd4780d292f7b4e72a3e9976677841697"
+url = "https://dl.google.com/go/go1.25.14.windows-amd64.zip"
