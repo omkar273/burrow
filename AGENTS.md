@@ -6,9 +6,13 @@ Burrow is an independent copy of SaaS data on storage you control, that you can 
 
 ## Hard rules
 
-**TDD (red-green always).** Every production function under `apps/` and `packages/` starts as a failing `bun test`. Cycle: write the failing test → run it and see it fail for the right reason → write the minimum code → run it and see it pass. Bugs: reproduce with a failing test before the fix. No test required for docs, license, community files, `.gitkeep`, or this file.
+**TDD (red-green always).** Every production function under `packages/` starts as a failing test — `go test` for the engine and binaries, `bun test` for `packages/web`. Cycle: write the failing test → run it and see it fail for the right reason → write the minimum code → run it and see it pass. Bugs: reproduce with a failing test before the fix. No test required for docs, license, community files, `.gitkeep`, or this file.
+
+**Test logic, not scaffolding.** The TDD rule above applies to behaviour that can be wrong in a way review would miss: invariants, orchestration, error paths, crash and restart safety, anything touching identity or the archive. It does not apply to static configuration, plain getters, struct wiring, input validators, or a library doing its documented job. If a test would only fail when the code is obviously broken, it is bloat — delete it.
 
 **YAGNI.** Smallest change that satisfies the request. No extra connectors, packages, flags, or abstractions. No drive-by refactors. No microservices. Do not build a source because it appears in the README.
+
+**Comments earn their place.** The next reader is a developer. Do not restate what the code already says — no `// Fields of the X`, no `// NewFoo returns a Foo`, no narrating a loop. Write a comment only when it carries what the code cannot: why a non-obvious choice was made, a constraint the compiler will not enforce, or a trap the next change could spring. If deleting a comment loses nothing, delete it.
 
 **Restore is the acceptance test.** A finished copy job is not done. If the change touches copy, verify, restore, or export, the test is that you got the object back.
 
@@ -33,12 +37,31 @@ Types: `feat` `fix` `docs` `test` `refactor` `chore`. Scope is optional (`gmail`
 Toolchain is [mise](https://mise.jdx.dev). `make` is the command surface. Bun is the runtime. Do not use npm or a global Node.
 
 ```bash
-make install    # mise install + bun install
+make install            # mise install + bun install
 make doctor
-make test       # bun test (stub until apps exist)
-make lint
-make check      # lint then test
+make test               # go test ./... , then bun test when packages/web exists
+make lint               # go vet, gofmt, layer check
+make check              # lint then test
+make migrate            # apply pending schema migrations
+make migrate-dry-run    # print pending statements without applying
+make generate-ent       # regenerate ent code from packages/engine/ent/schema
+make generate-migration NAME=<name>
 ```
+
+## Layers (never violate)
+
+| Layer | Path | Rule |
+|---|---|---|
+| Facade | `packages/engine/*.go` | The entire public surface. No `internal/` type in any signature. |
+| Domain | `packages/engine/internal/domain/` | Models and interfaces. Zero third-party imports. No network, no disk. |
+| Repository | `packages/engine/internal/repository/` | Implements domain interfaces. Generated `ent.*` types never escape it. |
+| Adapters | `internal/source/`, `internal/storage/`, `internal/credential/` | Implement ports. Never call upward. |
+| Service | `packages/engine/internal/service/` | Use cases. Orchestrates repositories and adapters. |
+| Binaries | `packages/engine/cmd/burrow/`, `packages/engine/cmd/migrate/` | Consume the facade only. The compiler cannot block `internal/` here — `scripts/check-layers.sh` does. |
+
+- Migrations are versioned Atlas files. Never `Schema.Create` auto-migrate.
+- Write order is mandatory: fsync the blob, then commit the row.
+- `scripts/check-layers.sh` fails `make lint` if `domain/` imports anything third-party, or if `cmd/` imports `internal/`.
 
 ## Pointers
 

@@ -7,7 +7,9 @@ min_version = "2026.8.0"
 lockfile = true
 
 [tools]
+atlas = "latest"
 bun = "1"
+go = "1.25"
 
 [env]
 # Project-local; does not leak into the product binary.
@@ -27,8 +29,18 @@ run = "bun run dev"
 
 [tasks.test]
 description = "Run tests"
-run = "bun test"
+run = [
+  "go test ./...",
+  # bun test errors out when no test files exist. apps/web is not
+  # scaffolded yet; say so rather than silently passing.
+  "if [ -d packages/web ]; then bun test; else echo 'skip: packages/web not scaffolded, no bun tests to run'; fi",
+]
 
 [tasks.lint]
 description = "Lint"
-run = "bun run lint"
+run = [
+  "go vet ./...",
+  # gofmt -l exits 0 even when it lists files; fail explicitly.
+  "test -z \"$(gofmt -l .)\" || { gofmt -l .; echo 'unformatted files above'; exit 1; }",
+  "./scripts/check-layers.sh",
+]

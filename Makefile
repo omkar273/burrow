@@ -35,3 +35,21 @@ lint: ## Lint
 	$(MISE) run lint
 
 check: lint test ## Lint then test
+
+.PHONY: migrate migrate-dry-run
+migrate: ## Apply pending schema migrations (PROFILE=<name>)
+	$(MISE) exec -- go run ./packages/engine/cmd/migrate $(if $(PROFILE),--profile $(PROFILE),)
+
+migrate-dry-run: ## Print pending migration statements without applying
+	$(MISE) exec -- go run ./packages/engine/cmd/migrate --dry-run $(if $(PROFILE),--profile $(PROFILE),)
+
+.PHONY: generate-ent generate-migration
+generate-ent: ## Regenerate ent code from ent/schema
+	$(MISE) exec -- go run -mod=mod entgo.io/ent/cmd/ent generate ./packages/engine/ent/schema
+
+generate-migration: ## Generate a versioned Atlas migration (NAME=<name>)
+	$(MISE) exec -- atlas migrate diff $(NAME) \
+		--dir "file://packages/engine/migrations/versioned" \
+		--to "ent://packages/engine/ent/schema" \
+		--dev-url "sqlite://dev?mode=memory&_fk=1"
+	cp packages/engine/migrations/versioned/*.sql packages/engine/internal/repository/ent/migrations/
