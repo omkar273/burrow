@@ -40,12 +40,13 @@ func run(args []string, out *os.File) error {
 			return err
 		}
 		if plan == "" {
-			fmt.Fprintln(out, "schema is up to date")
+			fmt.Fprintln(os.Stderr, "schema is up to date")
 			return nil
 		}
-		fmt.Fprintln(out, "pending statements, not applied:")
-		fmt.Fprintln(out)
-		fmt.Fprintln(out, plan)
+		// Only the SQL goes to stdout, so `migrate --dry-run > out.sql`
+		// produces a file you can actually feed to sqlite3.
+		fmt.Fprintln(os.Stderr, "-- pending statements, not applied")
+		fmt.Fprint(out, plan)
 		return nil
 	}
 

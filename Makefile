@@ -41,7 +41,7 @@ migrate: ## Apply pending schema migrations (PROFILE=<name>)
 	$(MISE) exec -- go run ./packages/engine/cmd/migrate $(if $(PROFILE),--profile $(PROFILE),)
 
 migrate-dry-run: ## Print pending migration statements without applying
-	$(MISE) exec -- go run ./packages/engine/cmd/migrate --dry-run $(if $(PROFILE),--profile $(PROFILE),)
+	@$(MISE) exec -- go run ./packages/engine/cmd/migrate --dry-run $(if $(PROFILE),--profile $(PROFILE),)
 
 .PHONY: generate-ent
 generate-ent: ## Regenerate ent code from ent/schema
