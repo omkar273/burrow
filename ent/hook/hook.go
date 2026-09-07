@@ -21,6 +21,54 @@ func (f BlobFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BlobMutation", m)
 }
 
+// The ObjectFunc type is an adapter to allow the use of ordinary
+// function as Object mutator.
+type ObjectFunc func(context.Context, *ent.ObjectMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ObjectFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ObjectMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ObjectMutation", m)
+}
+
+// The ObjectAliasFunc type is an adapter to allow the use of ordinary
+// function as ObjectAlias mutator.
+type ObjectAliasFunc func(context.Context, *ent.ObjectAliasMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ObjectAliasFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ObjectAliasMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ObjectAliasMutation", m)
+}
+
+// The ObjectVersionFunc type is an adapter to allow the use of ordinary
+// function as ObjectVersion mutator.
+type ObjectVersionFunc func(context.Context, *ent.ObjectVersionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ObjectVersionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ObjectVersionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ObjectVersionMutation", m)
+}
+
+// The SourceFunc type is an adapter to allow the use of ordinary
+// function as Source mutator.
+type SourceFunc func(context.Context, *ent.SourceMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f SourceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.SourceMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SourceMutation", m)
+}
+
 // Condition is a hook condition function.
 type Condition func(context.Context, ent.Mutation) bool
 

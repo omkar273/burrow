@@ -29,9 +29,110 @@ var (
 			},
 		},
 	}
+	// ObjectsColumns holds the columns for the "objects" table.
+	ObjectsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "source_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "kind", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "external_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "first_seen_at", Type: field.TypeTime},
+		{Name: "last_seen_at", Type: field.TypeTime},
+		{Name: "deleted_at_source", Type: field.TypeTime, Nullable: true},
+	}
+	// ObjectsTable holds the schema information for the "objects" table.
+	ObjectsTable = &schema.Table{
+		Name:       "objects",
+		Columns:    ObjectsColumns,
+		PrimaryKey: []*schema.Column{ObjectsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "object_source_id_external_id",
+				Unique:  true,
+				Columns: []*schema.Column{ObjectsColumns[3], ObjectsColumns[5]},
+			},
+		},
+	}
+	// ObjectAliasColumns holds the columns for the "object_alias" table.
+	ObjectAliasColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "object_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "source_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "external_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
+	}
+	// ObjectAliasTable holds the schema information for the "object_alias" table.
+	ObjectAliasTable = &schema.Table{
+		Name:       "object_alias",
+		Columns:    ObjectAliasColumns,
+		PrimaryKey: []*schema.Column{ObjectAliasColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "objectalias_source_id_external_id",
+				Unique:  true,
+				Columns: []*schema.Column{ObjectAliasColumns[4], ObjectAliasColumns[5]},
+			},
+		},
+	}
+	// ObjectVersionsColumns holds the columns for the "object_versions" table.
+	ObjectVersionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "object_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "blob_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "restored_from_version_id", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "captured_at", Type: field.TypeTime},
+	}
+	// ObjectVersionsTable holds the schema information for the "object_versions" table.
+	ObjectVersionsTable = &schema.Table{
+		Name:       "object_versions",
+		Columns:    ObjectVersionsColumns,
+		PrimaryKey: []*schema.Column{ObjectVersionsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "objectversion_object_id_captured_at",
+				Unique:  false,
+				Columns: []*schema.Column{ObjectVersionsColumns[3], ObjectVersionsColumns[6]},
+			},
+			{
+				Name:    "objectversion_blob_id",
+				Unique:  false,
+				Columns: []*schema.Column{ObjectVersionsColumns[4]},
+			},
+		},
+	}
+	// SourcesColumns holds the columns for the "sources" table.
+	SourcesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "kind", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "account_email", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "status", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
+	}
+	// SourcesTable holds the schema information for the "sources" table.
+	SourcesTable = &schema.Table{
+		Name:       "sources",
+		Columns:    SourcesColumns,
+		PrimaryKey: []*schema.Column{SourcesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "source_kind_account_email",
+				Unique:  true,
+				Columns: []*schema.Column{SourcesColumns[3], SourcesColumns[4]},
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		BlobsTable,
+		ObjectsTable,
+		ObjectAliasTable,
+		ObjectVersionsTable,
+		SourcesTable,
 	}
 )
 

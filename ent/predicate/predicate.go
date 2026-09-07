@@ -8,3 +8,15 @@ import (
 
 // Blob is the predicate function for blob builders.
 type Blob func(*sql.Selector)
+
+// Object is the predicate function for object builders.
+type Object func(*sql.Selector)
+
+// ObjectAlias is the predicate function for objectalias builders.
+type ObjectAlias func(*sql.Selector)
+
+// ObjectVersion is the predicate function for objectversion builders.
+type ObjectVersion func(*sql.Selector)
+
+// Source is the predicate function for source builders.
+type Source func(*sql.Selector)

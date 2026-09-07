@@ -13,6 +13,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/omkar273/burrow/ent/blob"
+	"github.com/omkar273/burrow/ent/object"
+	"github.com/omkar273/burrow/ent/objectalias"
+	"github.com/omkar273/burrow/ent/objectversion"
+	"github.com/omkar273/burrow/ent/source"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -73,7 +77,11 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			blob.Table: blob.ValidColumn,
+			blob.Table:          blob.ValidColumn,
+			object.Table:        object.ValidColumn,
+			objectalias.Table:   objectalias.ValidColumn,
+			objectversion.Table: objectversion.ValidColumn,
+			source.Table:        source.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

@@ -14,6 +14,14 @@ type Tx struct {
 	config
 	// Blob is the client for interacting with the Blob builders.
 	Blob *BlobClient
+	// Object is the client for interacting with the Object builders.
+	Object *ObjectClient
+	// ObjectAlias is the client for interacting with the ObjectAlias builders.
+	ObjectAlias *ObjectAliasClient
+	// ObjectVersion is the client for interacting with the ObjectVersion builders.
+	ObjectVersion *ObjectVersionClient
+	// Source is the client for interacting with the Source builders.
+	Source *SourceClient
 
 	// lazily loaded.
 	client     *Client
@@ -146,6 +154,10 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Blob = NewBlobClient(tx.config)
+	tx.Object = NewObjectClient(tx.config)
+	tx.ObjectAlias = NewObjectAliasClient(tx.config)
+	tx.ObjectVersion = NewObjectVersionClient(tx.config)
+	tx.Source = NewSourceClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.
