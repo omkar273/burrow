@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main,develop]
   pull_request:
 
 # A new push to a PR makes the previous run pointless.
