@@ -1,0 +1,27 @@
+name: Bug
+description: Something does not work as the docs or code claim.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If this could leak credentials, archive contents, or restore paths, stop and use a [private advisory](https://github.com/omkar273/burrow/security/advisories/new) instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      placeholder: What you did, what you expected, what you got.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      placeholder: Commands, files, or UI steps. The first loop is not shipped — say so if this is about docs or the toolchain.
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "e.g. macOS, mise doctor output"

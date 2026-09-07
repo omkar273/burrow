@@ -207,11 +207,9 @@ Named like [restic](https://github.com/restic/restic) and [Syncthing](https://gi
 
 <p align="center"><strong>Everything required to own and recover your data is open.</strong></p>
 
-AGPLv3 for own / copy / verify / recover / export. Cloud and enterprise for convenience and organizational scale — planned, not a catalog.
+[AGPLv3 or later](LICENSE) for own / copy / verify / recover / export. Cloud and enterprise for convenience and organizational scale — planned, not a catalog.
 
-AGPL is copyleft, not “non-commercial,” and it does not forbid forks. **Burrow**, the logo, and the mascot are trademarks. Fork the code; don’t impersonate the burrow.
-
-The `LICENSE` file is not in the tree yet. Until it is, treat the intent as AGPLv3.
+AGPL is copyleft, not “non-commercial,” and it does not forbid forks. **Burrow**, the logo, and the mascot are trademarks — see [TRADEMARKS.md](TRADEMARKS.md). Fork the code; don’t impersonate the burrow.
 
 ---
 
@@ -243,7 +241,7 @@ Nothing production-ready to run. Toolchain is [mise](https://mise.jdx.dev); `mak
 # once: brew install mise
 # echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
 
-git clone https://github.com/<org>/burrow.git   # TODO: canonical remote
+git clone https://github.com/omkar273/burrow.git
 cd burrow
 make install    # mise install + bun install
 make doctor
@@ -258,9 +256,9 @@ make test
 make lint
 ```
 
-Open an issue before large design changes. There is no `CONTRIBUTING.md` yet — the Gmail recovery loop is the contribution.
+Open an issue before large design changes. See [CONTRIBUTING.md](CONTRIBUTING.md) — the Gmail recovery loop is the contribution. [Code of conduct](CODE_OF_CONDUCT.md).
 
-If you find a security issue, do not file a public GitHub issue. There is no `security@` yet; open a private advisory on the repo when the remote exists, or wait until a contact is published.
+If you find a security issue, do not file a public GitHub issue. Follow [SECURITY.md](SECURITY.md).
 
 <p align="center">
   <img src="docs/assets/mascot.webp" width="72" alt="" />

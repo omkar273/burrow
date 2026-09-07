@@ -1,0 +1,26 @@
+name: Idea
+description: Design change or feature — open this before a large PR.
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The contribution that matters is the Gmail recovery loop. Drive, Microsoft 365, Slack, GitHub, and Notion are roadmap names, not connectors.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem is this
+      placeholder: Who hits this, and what fails today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you want to change
+    validations:
+      required: true
+  - type: textarea
+    id: restore
+    attributes:
+      label: How restore still holds
+      placeholder: A backup is not a backup until you have restored from it. If this does not touch restore, say that.
