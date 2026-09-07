@@ -78,7 +78,7 @@ func Open(ctx context.Context, cfg Config) (*Engine, error) {
 	}
 
 	// An OS advisory lock, not a pidfile: the kernel drops it when the
-	// process dies, so a crashed burrowd leaves nothing stale to clear.
+	// process dies, so a crashed burrow leaves nothing stale to clear.
 	lock := flock.New(filepath.Join(profile.Root, ".lock"))
 	held, err := lock.TryLock()
 	if err != nil {
@@ -86,7 +86,7 @@ func Open(ctx context.Context, cfg Config) (*Engine, error) {
 	}
 	if !held {
 		return nil, ierr.New("profile " + profile.Name + " is already open").
-			WithHint("another burrowd is running against this profile; stop it or use --profile").
+			WithHint("another burrow is running against this profile; stop it or use --profile").
 			Mark(ierr.ErrProfileLocked)
 	}
 

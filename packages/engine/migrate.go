@@ -49,7 +49,7 @@ func Migrate(ctx context.Context, cfg Config) ([]string, error) {
 // withMigrationDB resolves the profile, takes the same lock Open takes, and
 // hands the caller a database handle.
 //
-// Migrating shares the profile lock deliberately: a running burrowd against a
+// Migrating shares the profile lock deliberately: a running burrow against a
 // half-migrated schema is the failure this prevents.
 func withMigrationDB[T any](ctx context.Context, cfg Config, fn func(*entrepo.Client) (T, error)) (T, error) {
 	var zero T
@@ -82,7 +82,7 @@ func withMigrationDB[T any](ctx context.Context, cfg Config, fn func(*entrepo.Cl
 	}
 	if !held {
 		return zero, ierr.New("profile " + profile.Name + " is already open").
-			WithHint("stop the running burrowd before migrating").
+			WithHint("stop the running burrow before migrating").
 			Mark(ierr.ErrProfileLocked)
 	}
 	defer lock.Unlock() //nolint:errcheck

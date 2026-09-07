@@ -1,7 +1,7 @@
 // Command migrate applies Burrow's versioned schema migrations, or prints
 // what it would apply.
 //
-// Separate from burrowd because migrating and serving are different
+// Separate from burrow because migrating and serving are different
 // operations with different blast radii: --dry-run must be able to show an
 // operator the statements before anything touches a database holding their
 // mail.

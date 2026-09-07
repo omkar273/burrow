@@ -1,4 +1,4 @@
-// Command burrowd is the local Burrow daemon and CLI.
+// Command burrow is the local Burrow daemon and CLI.
 //
 // It is a thin consumer of packages/engine: everything it can reach is
 // the engine's public surface, which is what keeps the engine's internals
@@ -15,7 +15,7 @@ import (
 
 func main() {
 	if err := run(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, "burrowd:", err)
+		fmt.Fprintln(os.Stderr, "burrow:", err)
 		os.Exit(1)
 	}
 }

@@ -18,5 +18,5 @@ dist/
 !.vscode/extensions.json
 
 # Go
-/burrowd
+/burrow
 *.test

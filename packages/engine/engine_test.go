@@ -53,7 +53,7 @@ func TestOpenIsIdempotentAcrossRuns(t *testing.T) {
 	defer second.Close()
 }
 
-// Two burrowd processes on one profile would race on blob writes, job
+// Two burrow processes on one profile would race on blob writes, job
 // claiming, and Gmail quota. SQLite's busy_timeout protects only the
 // database.
 func TestSecondOpenOfTheSameProfileIsRefused(t *testing.T) {

@@ -48,7 +48,7 @@ The handoff's §23 "V1 must have" list is six independent subsystems. It is deco
 go.mod  go.sum                        the only Go files at the repo root
 packages/engine/
   engine.go  migrate.go               the entire public surface
-  cmd/burrowd/                        the daemon
+  cmd/burrow/                        the daemon
   cmd/migrate/                        schema migrations, with --dry-run
   ent/  ent/schema/  ent/schema/mixin/
   migrations/versioned/               Atlas
@@ -276,10 +276,10 @@ Also answers: does the darwin keyring backend pull in cgo?
 ### M1 — walking skeleton
 
 ```text
-burrowd connect gmail        OAuth loopback; token → keyring
-burrowd pull --limit 1       fetch RAW → sha256 → blob on disk → rows
-burrowd restore <obj_id>     read blob → messages.insert
-burrowd profile list|create|delete
+burrow connect gmail        OAuth loopback; token → keyring
+burrow pull --limit 1       fetch RAW → sha256 → blob on disk → rows
+burrow restore <obj_id>     read blob → messages.insert
+burrow profile list|create|delete
 ```
 
 Carries the scaffolding: ent schemas, the modernc wrapper driver, the first Atlas migration, the fx module graph.

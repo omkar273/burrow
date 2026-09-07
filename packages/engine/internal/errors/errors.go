@@ -39,7 +39,7 @@ var (
 	ErrReplicaCorrupt    = newSentinel(CodeReplicaCorrupt, "replica failed verification")
 	ErrCredentialExpired = newSentinel(CodeCredentialExpired, "credential expired and could not be refreshed")
 	ErrSourceUnavailable = newSentinel(CodeSourceUnavailable, "source is unavailable")
-	ErrProfileLocked     = newSentinel(CodeProfileLocked, "another burrowd holds this profile")
+	ErrProfileLocked     = newSentinel(CodeProfileLocked, "another burrow holds this profile")
 	ErrNotFound          = newSentinel(CodeNotFound, "not found")
 	ErrValidation        = newSentinel(CodeValidation, "validation failed")
 	ErrInternal          = newSentinel(CodeInternal, "internal error")
