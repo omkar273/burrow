@@ -26,11 +26,12 @@ The handoff's §23 "V1 must have" list is six independent subsystems. It is deco
 | D3 | **ent** ORM with **ent's own auto-migration** (`Schema.Create`), foreign keys on and dropping off. Version in SQLite's `PRAGMA user_version` | **Reversed 2026-09-08.** This decision originally mandated Atlas versioned migrations and explicitly forbade `Schema.Create`, on the grounds that the schema is a portability contract. Atlas was dropped because it made `ent/schema` and a directory of `.sql` files two sources of truth kept in step by a copy step, and a toolchain pin, for a single-file local database. `ent/schema` is now the only source of truth. What was preserved: the version identity (`SchemaVersion` constant → `user_version`), reviewable SQL before applying (`Schema.WriteTo` behind `make migrate-dry-run`), and the foreign keys. What was given up: per-change migration history, and a hand-written escape hatch for destructive changes. `WithDropColumn(false)` means a removed field leaves its column behind — divergence has to be handled deliberately when it first arises. |
 | D4 | **modernc.org/sqlite**, registered under the `sqlite3` driver name | Pure Go, FTS5 included, cross-compiles from macOS to Linux/ARM. A cgo driver forfeits the single-binary story. Needs a ~30-line wrapper because mattn registers as `sqlite3` and modernc as `sqlite`. |
 | D5 | **uber fx** for DI, composed from **per-package `fx.Module`s** | `fx.Lifecycle` gives ordered start/stop for background workers. Per-package modules keep `main.go` at ~40 lines — FlexPrice's rule of registering everything in `main.go` produced a 734-line file. |
-| D6 | **The blob is the raw `.eml`**; everything else is derived index | `messages.insert` takes raw RFC822 with IMAP-APPEND semantics, so we restore exactly the bytes we stored and byte-equality is directly assertable. A `.eml` also opens in any mail client with no Burrow installed — the portability property. |
+| D6 | **The blob is the raw `.eml`**; everything else is derived index | IMAP `APPEND` takes raw RFC822, so we restore exactly the bytes we stored and byte-equality is directly assertable. A `.eml` also opens in any mail client with no Burrow installed — the portability property. |
 | D7 | **Raw-only blobs at M1**; attachments extracted as separate blobs at M4 | Deferred dedup costs ~2.4× on attachment bytes. Shredding the `.eml` and recomposing on restore must be byte-exact (base64 wrapping, MIME boundaries, header folding) — that risk is not taken before a passing restore test exists to catch it. |
 | D8 | **Prefixed k-sortable ULIDs** (`obj_`, `ver_`, `blob_`, `rep_`, `src_`, `job_`) | Makes the four-identity discipline (§4) visible at a glance; a `rep_` cannot be silently passed where an `obj_` belongs. Pattern adopted from FlexPrice. |
-| D9 | **99designs/keyring** for OAuth tokens, with explicitly pinned backends | zalando/go-keyring is Secret-Service-only and hard-fails on a headless NAS — the deployment the README leads with. 99designs falls back to an encrypted file backend. |
+| D9 | **99designs/keyring** for provider credentials, with explicitly pinned backends | zalando/go-keyring is Secret-Service-only and hard-fails on a headless NAS — the deployment the README leads with. 99designs falls back to an encrypted file backend. |
 | D10 | **Profile = data directory**, not a domain concept | `TenantID` is a security boundary enforced per query; a profile is an organizational one with no security claim, since one OS user reads every profile's files anyway. A scoping column would advertise isolation the process cannot enforce. |
+| D12 | **IMAP** (`emersion/go-imap/v2`) rather than the Gmail API, authenticated by app password in V1 with XOAUTH2 pluggable later | One connector serves every mail provider, `APPEND` is the restore primitive the API only emulated, and no Cloud project or OAuth verification is needed to start. Costs the scoped credential; see §6. |
 | D11 | **No** Kafka, Temporal, Redis, or ClickHouse | Handoff §24 and §39 explicitly reject distributed infrastructure in V1. FlexPrice carries ~60 direct dependencies because it is a multi-tenant SaaS API; M1 has ~6. |
 
 ### Rejected
@@ -190,42 +191,84 @@ Blob keys are content-addressed with fan-out over the **hex digest with the algo
 
 ---
 
-## 6. Gmail specifics
+## 6. Mail access: IMAP, not the Gmail API
 
-### Fetch and restore
+**Decided 2026-09-08, replacing the Gmail API.** The spec previously specified
+`users.messages.get?format=RAW` and `users.messages.insert` behind OAuth. It now
+specifies IMAP.
 
-- Read: `users.messages.get` with `format=RAW` → base64url RFC 2822 → decode → those bytes are the blob.
-- Restore: `users.messages.insert` (**not** `import` — import re-runs delivery scanning and classification, which can reclassify or drop the message, making restore lossy).
+### Why
 
-### Restore creates a duplicate unless designed against
+Gmail's IMAP exposes what the connector needs through the documented
+`X-GM-EXT-1` extensions — confirmed advertised by `imap.gmail.com`:
 
-`messages.insert` mints a **new** Gmail message ID. The next incremental sync sees an unknown ID and would ingest it as a new `Object`; restore twice and the archive forks.
+| Need | IMAP |
+|---|---|
+| Provider message id (`external_id`) | `X-GM-MSGID` |
+| Thread id | `X-GM-THRID` |
+| Labels, readable and settable | `X-GM-LABELS` |
+| Canonical RFC822 bytes | `FETCH BODY.PEEK[]` |
+| Restore | `APPEND` |
 
-**Mitigation: restore records the alias, ingest never infers one.** Identical bytes do not mean the same logical object — two genuinely distinct messages can share content, and merging them on a hash match would silently lose one and its lifecycle. Only restore knows the lineage, because it wrote those exact bytes and received that `external_id` back, so restore records the `ObjectAlias` directly.
+`APPEND` is the decisive one. `messages.insert` was chosen because it has
+IMAP-APPEND semantics; IMAP simply *is* that primitive, without the indirection.
 
-Ingest therefore resolves `external_id` (following aliases), and on a miss creates a new `Object` and `Version` that **reference the existing `Blob` row** when the hash already exists. Deduplication stays at the blob layer, where it belongs; identity stays with the provider's object.
+And one connector reaches every provider — Fastmail, Proton Bridge, Zoho,
+self-hosted — rather than Gmail alone. For a product positioned as "your SaaS
+data, independently kept", that is a materially larger claim than a Gmail
+backup tool.
 
-`ObjectAlias` is unique on `(source_id, external_id)` — Gmail IDs are unique only within a mailbox, and one profile holds many sources. An alias may not shadow an identity an `Object` already claims; `AddAlias` enforces that in the same transaction as the insert. Restore additionally records `restored_from_version_id` provenance.
+### The cost, stated plainly
 
-**Restore is not idempotent, and the archive cannot make it so.** `messages.insert` creates a new message on every call and never deduplicates on content, so a retry after an ambiguous timeout leaves two identical messages in the mailbox. Aliasing prevents the *archive* forking; it does nothing about the *mailbox*. V1 therefore treats restore as an explicit, operator-initiated act: it is never retried automatically, a timeout is reported rather than retried, and the operator is told a duplicate may exist. Automatic retry needs a source-side marker — a Burrow label, or an `X-Burrow-Restore-Id` header searched before inserting — which is deferred with the rest of restore hardening.
+**An app password cannot be scoped.** It grants full mailbox access including
+delete, does not expire, and is not per-capability. That is a worse trust
+posture than the OAuth design it replaces, where read access was requested at
+connect and write only at first restore. It sits uneasily against this repo's
+own "not a credential proxy" line, and it is accepted knowingly rather than
+overlooked.
 
-### OAuth scopes — a product decision, not a detail
+**The mitigation is that the credential and the protocol are independent.**
+`imap.gmail.com` advertises `AUTH=XOAUTH2`, so the same IMAP connector can
+authenticate with an OAuth token instead of an app password. The connector must
+therefore treat auth as pluggable from the start: app password for V1 because
+it needs no Cloud project, XOAUTH2 later for users who want scoped, revocable
+credentials. Choosing IMAP does not forfeit that.
 
-`gmail.readonly` **cannot** restore. `messages.insert` requires one of `gmail.insert`, `gmail.modify`, or `https://mail.google.com/`.
+**Throughput is bandwidth-bound, not request-bound.** Gmail caps IMAP at
+2,500 MB/day down and 500 MB/day up. A mailbox of a few GB therefore takes days
+on first sync, and a large one is slower over IMAP than it would have been over
+the API, whose limit was request-shaped. Initial sync remains a resumable,
+multi-day background job; M2 must throttle on bytes transferred rather than on
+request count.
 
-**Decision: two scopes, requested incrementally.** `gmail.readonly` at `burrow connect`; `gmail.insert` (the narrowest — insert and import only; no read, no delete, no send) requested only when the user first attempts a restore. A backup tool that cannot read data back is useless; one holding unused write access is a liability. Incremental consent resolves both.
+### Checkpoints
 
-Both are Google *restricted* scopes, and owning the Cloud project is **not** by itself an exemption. An unverified app is limited to test users on the consent screen (100), and shows the unverified-app warning. That covers the self-host-your-own-project case — which is the V1 distribution model — but any deployment serving external users at scale still needs verification and, for restricted scopes, a security assessment. The spec claims the former, not the latter.
+`UIDVALIDITY` plus `UIDNEXT` per mailbox replaces `historyId`, and the failure
+mode is identical: when `UIDVALIDITY` changes, every stored UID is meaningless
+and a full resync is required. That maps onto the existing typed
+`ErrCheckpointExpired` without changing the port.
 
-### Rate limits are a product constraint
+`CONDSTORE` (`HIGHESTMODSEQ`) would give cheaper incremental sync, but
+`imap.gmail.com` does not advertise it before authentication. Whether it
+appears post-login is an M0 question, not an assumption. `QRESYNC` is not
+offered at all.
 
-Google's published quota is **6,000 units/minute/user/project**, with `messages.get` at **20** units and `messages.list` at **5**. That is roughly **300 messages/minute** — plus an undocumented ~50-concurrent-request-per-mailbox ceiling that returns 429 well below the unit quota.
+### Restore is still not idempotent
 
-A 500k-message mailbox is therefore **~28 hours of pure API time at the theoretical best**, before any retry or backoff.
+`APPEND` creates a new message with a new UID on every call, exactly as
+`messages.insert` did. The reasoning and the V1 stance are unchanged: restore
+is an explicit operator-initiated act, never retried automatically, and a
+timeout is reported rather than retried.
 
-**Record the quota cohort per source.** Projects that used the API between November 2025 and April 2026 keep their older, more generous quotas; projects created on or after 1 May 2026 get the numbers above. The engine must not hard-code either: M2 adapts to observed 429s rather than to a compile-time constant, and the cohort is recorded so a projection can be explained.
+### Library
 
-An earlier draft of this spec cited 15,000 units/min with `get` at 5 — roughly 3,000 msg/min and a 2.8-hour projection. That was wrong by an order of magnitude. It is corrected here because M2 and M3 are sized against it: at 300 msg/min, initial sync is a multi-day background job, not an afternoon.
+`github.com/emersion/go-imap/v2`, which supports the extensions above.
+
+**It is at `v2.0.0-beta.8`.** Taking a beta dependency for the connector of a
+data-integrity product is a real risk and is taken deliberately: v1 is stable
+but has an older API, and the alternative is hand-rolling IMAP. The mitigation
+is that the blob is raw RFC822 bytes whose hash we verify ourselves, so a
+library defect corrupts a fetch loudly rather than the archive silently.
 
 ---
 
@@ -239,7 +282,14 @@ Multiple Gmail accounts **within** one profile are simply multiple `Source` rows
 
 ### Credentials
 
-OAuth refresh tokens live in `99designs/keyring`, service `burrow`, key `<profile>/<source_id>`.
+The provider credential — a Gmail app password in V1, an OAuth refresh token if
+XOAUTH2 is added — lives in `99designs/keyring`, service `burrow`, key
+`<profile>/<source_id>`.
+
+An app password is unscoped and does not expire, which makes where it lives
+matter more than it would for a revocable token: anything that reads it holds
+full mailbox access, including delete. It is never logged, never written to the
+archive, and never included in an export.
 
 - **`AllowedBackends` is pinned explicitly per platform.** Left on auto-select, the library's backend choice is non-deterministic and a token can appear to vanish between runs.
 - **Verify at M0 that the darwin keychain backend does not reintroduce cgo.** Build tags should keep it out of Linux/ARM cross-builds, but "should" is insufficient against a hard constraint. Fallback if it does: shell out to `/usr/bin/security`.
@@ -257,7 +307,7 @@ OAuth refresh tokens live in `99designs/keyring`, service `burrow`, key `<profil
 |---|---|
 | Crash mid-blob-write | Write to temp file → `fsync` → atomic rename. |
 | Crash between blob and row | **Order is mandatory: fsync blob, then commit row.** The reverse leaves a dangling reference, which is corruption. This order leaves an orphan blob, which is harmless and GC-able precisely because it is content-addressed. There is no transaction spanning ent and the blob store. |
-| Expired OAuth token | Refresh via `oauth2` token source; `ErrCredentialExpired` if refresh fails. |
+| Rejected credential | IMAP `AUTHENTICATE` fails; `ErrCredentialExpired`. An app password does not expire, so this means it was revoked, 2FA was turned off, or a Workspace admin disabled app passwords. |
 | Same message pulled twice | Same content hash → no second blob, no second version, no second object. |
 | Concurrent writers | SQLite in WAL mode with `busy_timeout`; single-writer discipline for background workers. modernc's behaviour under write contention is verified at M1, not assumed. |
 
@@ -278,8 +328,8 @@ Sentinel errors with a builder (`ierr.NewError(...).WithHint(...).Mark(...)`), m
 One file, no ent, no fx, no layers. **Explicitly labeled throwaway; the code is not kept.**
 
 ```text
-OAuth → messages.get RAW → sha256 → write to disk
-      → messages.insert → messages.get the new one → compare hashes
+IMAP login (app password) → FETCH BODY.PEEK[] → sha256 → write to disk
+      → APPEND → FETCH the new UID → compare hashes
 ```
 
 Also answers: does the darwin keyring backend pull in cgo?
@@ -291,15 +341,15 @@ Also answers: does the darwin keyring backend pull in cgo?
 ### M1 — walking skeleton
 
 ```text
-burrow connect gmail        OAuth loopback; token → keyring
-burrow pull --limit 1       fetch RAW → sha256 → blob on disk → rows
-burrow restore <obj_id>     read blob → messages.insert
+burrow connect gmail        prompt for an app password; store in keyring
+burrow pull --limit 1       FETCH → sha256 → blob on disk → rows
+burrow restore <obj_id>     read blob → IMAP APPEND
 burrow profile list|create|delete
 ```
 
 Carries the scaffolding: ent schemas, the modernc wrapper driver, the first Atlas migration, the fx module graph.
 
-**Done means:** `sha256(stored bytes) == sha256(bytes Gmail returns for the newly inserted message)`.
+**Done means:** `sha256(stored bytes) == sha256(bytes Gmail returns for the newly appended message)`.
 
 ### M2–M9
 
