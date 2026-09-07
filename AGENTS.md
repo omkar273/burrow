@@ -20,7 +20,13 @@ Burrow is an independent copy of SaaS data on storage you control, that you can 
 
 **Secrets stay out.** No tokens, keys, or customer data in the tree, logs, tests, or export dumps. Vulnerabilities: [SECURITY.md](SECURITY.md), never a public issue.
 
-**Do not commit unless the human asks.**
+**Commits.** Do not commit unless the human asks. Then Conventional Commits, **one line only** — no body, no footer, no `Co-authored-by`, no AI trailer.
+
+```text
+type(scope): imperative summary
+```
+
+Types: `feat` `fix` `docs` `test` `refactor` `chore`. Scope is optional (`gmail`, `core`, `web`). Imperative, lowercase, no trailing period, ≤72 characters. Example: `docs: add AGENTS.md for coding agents`.
 
 ## Commands
 

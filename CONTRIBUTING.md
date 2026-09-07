@@ -29,6 +29,7 @@ make doctor
 ## Pull requests
 
 - One concern per branch.
+- Commit messages: Conventional Commits, one line (`feat:` `fix:` `docs:` `test:` `refactor:` `chore:`), imperative, no body.
 - Link the issue.
 - Keep secrets out of the tree and out of logs.
 - If the change touches copy, verify, restore, or export, say how you would prove a restore still works — even if the loop is not runnable yet.
