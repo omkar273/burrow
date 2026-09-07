@@ -57,11 +57,11 @@ make generate-migration NAME=<name>
 | Repository | `packages/engine/internal/repository/` | Implements domain interfaces. Generated `ent.*` types never escape it. |
 | Adapters | `internal/source/`, `internal/storage/`, `internal/credential/` | Implement ports. Never call upward. |
 | Service | `packages/engine/internal/service/` | Use cases. Orchestrates repositories and adapters. |
-| Binaries | `packages/agent/`, `packages/migrate/` | Consume the facade only; the compiler blocks `internal/`. |
+| Binaries | `packages/engine/cmd/burrowd/`, `packages/engine/cmd/migrate/` | Consume the facade only. The compiler cannot block `internal/` here — `scripts/check-layers.sh` does. |
 
 - Migrations are versioned Atlas files. Never `Schema.Create` auto-migrate.
 - Write order is mandatory: fsync the blob, then commit the row.
-- `scripts/check-layers.sh` fails `make lint` if `domain/` imports anything third-party.
+- `scripts/check-layers.sh` fails `make lint` if `domain/` imports anything third-party, or if `cmd/` imports `internal/`.
 
 ## Pointers
 

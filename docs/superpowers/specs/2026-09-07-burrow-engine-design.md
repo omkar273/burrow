@@ -46,37 +46,40 @@ The handoff's §23 "V1 must have" list is six independent subsystems. It is deco
 
 ```text
 go.mod  go.sum                        the only Go files at the repo root
-packages/
-  agent/main.go                       burrowd: thin consumer of the engine facade
-  migrate/main.go                     schema migrations, with --dry-run
-  web/                                TypeScript, bun workspace (M9)
-  engine/
-    engine.go  migrate.go             the entire public surface
-    ent/  ent/schema/  ent/schema/mixin/
-    migrations/versioned/             Atlas
-    internal/                         unreachable from packages/agent by the compiler
-      types/ errors/ config/ sqlited/ validator/
-      domain/{object,source,blob}/    models + interfaces, zero third-party imports
-      repository/ent/                 implements domain interfaces
-      storage/  storage/localfs/      driven adapter
-      source/gmail/                   driven adapter
-      service/                        use cases: pull · restore · verify
-      testutil/                       FakeSource, FakeStore, temp-file SQLite
-scripts/check-layers.sh               fails the build if domain/ imports third-party
+packages/engine/
+  engine.go  migrate.go               the entire public surface
+  cmd/burrowd/                        the daemon
+  cmd/migrate/                        schema migrations, with --dry-run
+  ent/  ent/schema/  ent/schema/mixin/
+  migrations/versioned/               Atlas
+  internal/
+    types/ errors/ config/ sqlited/ validator/
+    domain/{object,source,blob}/      models + interfaces, zero third-party imports
+    repository/ent/                   implements domain interfaces
+    storage/  storage/localfs/        driven adapter
+    source/gmail/                     driven adapter
+    service/                          use cases: pull · restore · verify
+    testutil/                         FakeSource, FakeStore, temp-file SQLite
+packages/web/                         TypeScript, bun workspace (M9)
+scripts/check-layers.sh               enforces both layer rules below
 ```
 
-One directory, `packages/`, holds both binaries and libraries. A Go `main` is
-still a package, so nothing is misfiled; a library under `apps/` would have
-been. `bun`'s workspace glob is `packages/*` and ignores directories without a
-`package.json`, so the future web app lands here too.
+`cmd/` for binaries and `internal/` for implementation is the Go convention —
+restic, syncthing and rclone all use it. It sits under `packages/` so the repo
+keeps a single top-level source directory shared with the bun workspace, whose
+glob is `packages/*`.
 
-Worth recording that this is **not** the Go convention: restic, syncthing and
-rclone all use `cmd/` for binaries plus `internal/`, and none uses `apps/` or
-`packages/`, which are JS monorepo conventions. The single-directory layout was
-chosen for consistency with the bun workspace across a polyglot repo.
+**One consequence, deliberately accepted.** Go's `internal` rule is relative to
+the enclosing directory, so `packages/engine/cmd/...` *can* import
+`packages/engine/internal/...`; the compiler no longer enforces the facade
+boundary as it did when the binaries lived outside. The facade is still the
+intended API — it is what makes the engine embeddable for an AGPL core others
+may run in-process — so the rule moved from the compiler to
+`scripts/check-layers.sh`, which fails `make lint` if anything under `cmd/`
+imports `internal/`. Verified by breaking it on purpose.
 
 `packages/engine/internal/` is enforced by the compiler, not convention:
-`packages/agent` importing it is a build error. The facade in `engine.go` is
+`packages/engine/cmd/` importing it fails `make lint`. The facade in `engine.go` is
 therefore the real driving port, and the engine is embeddable — which
 matters for an AGPL core others may run in-process.
 
