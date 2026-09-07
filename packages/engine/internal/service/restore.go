@@ -7,7 +7,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/omkar273/burrow/packages/engine/internal/domain/blob"
 	"github.com/omkar273/burrow/packages/engine/internal/domain/object"
 	"github.com/omkar273/burrow/packages/engine/internal/domain/source"
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
@@ -21,15 +20,7 @@ type RestoreResult struct {
 	BytesRestored int64
 }
 
-type Restore struct {
-	objects object.Repository
-	blobs   blob.Repository
-	store   storage.Store
-}
-
-func NewRestore(objects object.Repository, blobs blob.Repository, store storage.Store) *Restore {
-	return &Restore{objects: objects, blobs: blobs, store: store}
-}
+type Restore struct{ deps Deps }
 
 // RestoreObject writes an object's current version back to the provider.
 //
@@ -51,17 +42,17 @@ func (s *Restore) RestoreObject(
 	sourceID, objectID string,
 	opts source.RestoreOpts,
 ) (RestoreResult, error) {
-	version, err := s.objects.CurrentVersion(ctx, objectID)
+	version, err := s.deps.Objects.CurrentVersion(ctx, objectID)
 	if err != nil {
 		return RestoreResult{}, err
 	}
 
-	stored, err := s.blobs.Get(ctx, version.BlobID)
+	stored, err := s.deps.Blobs.Get(ctx, version.BlobID)
 	if err != nil {
 		return RestoreResult{}, err
 	}
 
-	rc, err := s.store.Get(ctx, storage.KeyForHash(stored.ContentHash))
+	rc, err := s.deps.Store.Get(ctx, storage.KeyForHash(stored.ContentHash))
 	if err != nil {
 		return RestoreResult{}, err
 	}
@@ -85,7 +76,7 @@ func (s *Restore) RestoreObject(
 			Mark(ierr.ErrSourceUnavailable)
 	}
 
-	if err := s.objects.AddAlias(ctx, objectID, sourceID, newExternalID); err != nil {
+	if err := s.deps.Objects.AddAlias(ctx, objectID, sourceID, newExternalID); err != nil {
 		return RestoreResult{}, err
 	}
 
@@ -97,7 +88,7 @@ func (s *Restore) RestoreObject(
 		RestoredFromVersionID: &previous,
 		CapturedAt:            time.Now().UTC(),
 	}
-	if err := s.objects.CreateVersion(ctx, provenance); err != nil {
+	if err := s.deps.Objects.CreateVersion(ctx, provenance); err != nil {
 		return RestoreResult{}, err
 	}
 

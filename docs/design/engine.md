@@ -63,7 +63,7 @@ packages/engine/
     repository/ent/                   implements domain interfaces via Querier(ctx)
     storage/  storage/localfs/        driven adapter
     source/gmail/                     driven adapter
-    service/                          use cases: pull · restore · verify
+    service/                          use cases: deps.go + ingest · restore · verify
     testutil/                         FakeSource, FakeStore, temp-file SQLite
 packages/web/                         TypeScript, bun workspace (M9)
 scripts/check-layers.sh               enforces both layer rules below

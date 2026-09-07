@@ -61,7 +61,7 @@ data, not scratch space. Use a throwaway home instead: `HOME=$(mktemp -d) make m
 | Database | `packages/engine/internal/sqlite/` | Owns the handle, `WithTx`, and migrations. Nothing else opens a connection. |
 | Repository | `packages/engine/internal/repository/` | Implements domain interfaces. Generated `ent.*` types never escape it. Queries go through `Querier(ctx)`, never the client directly, so every method works inside a transaction. |
 | Adapters | `internal/source/`, `internal/storage/`, `internal/credential/` | Implement ports. Never call upward. |
-| Service | `packages/engine/internal/service/` | Use cases. Orchestrates repositories and adapters. |
+| Service | `packages/engine/internal/service/` | Use cases. Orchestrates repositories and adapters. Every service takes `service.Deps` and nothing else, so a new dependency changes one struct rather than every constructor — and a service can build another with `s.deps.Restore()`. |
 | Binaries | `packages/engine/cmd/burrow/`, `packages/engine/cmd/migrate/` | Consume the facade only. The compiler cannot block `internal/` here — `scripts/check-layers.sh` does. |
 
 - Migrations are versioned Atlas files. Never `Schema.Create` auto-migrate.

@@ -30,9 +30,16 @@ func newHarness(t *testing.T) *harness {
 	blobs := entrepo.NewBlobRepository(c)
 	store := testutil.NewFakeStore()
 
+	deps := service.Deps{
+		Objects: objects,
+		Blobs:   blobs,
+		Sources: entrepo.NewSourceRepository(c),
+		Store:   store,
+	}
+
 	return &harness{
-		ingest:  service.NewIngest(objects, blobs, store),
-		restore: service.NewRestore(objects, blobs, store),
+		ingest:  deps.Ingest(),
+		restore: deps.Restore(),
 		src:     testutil.NewFakeSource(srcID),
 		store:   store,
 		objects: objects,
