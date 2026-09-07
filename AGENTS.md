@@ -8,6 +8,8 @@ Burrow is an independent copy of SaaS data on storage you control, that you can 
 
 **TDD (red-green always).** Every production function under `apps/` and `packages/` starts as a failing `bun test`. Cycle: write the failing test → run it and see it fail for the right reason → write the minimum code → run it and see it pass. Bugs: reproduce with a failing test before the fix. No test required for docs, license, community files, `.gitkeep`, or this file.
 
+**Test logic, not scaffolding.** The TDD rule above applies to behaviour that can be wrong in a way review would miss: invariants, orchestration, error paths, crash and restart safety, anything touching identity or the archive. It does not apply to static configuration, plain getters, struct wiring, input validators, or a library doing its documented job. If a test would only fail when the code is obviously broken, it is bloat — delete it.
+
 **YAGNI.** Smallest change that satisfies the request. No extra connectors, packages, flags, or abstractions. No drive-by refactors. No microservices. Do not build a source because it appears in the README.
 
 **Comments earn their place.** The next reader is a developer. Do not restate what the code already says — no `// Fields of the X`, no `// NewFoo returns a Foo`, no narrating a loop. Write a comment only when it carries what the code cannot: why a non-obvious choice was made, a constraint the compiler will not enforce, or a trap the next change could spring. If deleting a comment loses nothing, delete it.

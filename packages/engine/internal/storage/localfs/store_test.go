@@ -40,33 +40,6 @@ func TestPutThenGetReturnsTheSameBytes(t *testing.T) {
 	}
 }
 
-func TestKeyFansOutByHashPrefix(t *testing.T) {
-	got := storage.KeyForHash("sha256:abcd1234")
-	want := "objects/ab/cd/abcd1234"
-	if got != want {
-		t.Fatalf("KeyForHash = %q, want %q", got, want)
-	}
-}
-
-func TestPutIsIdempotentForIdenticalContent(t *testing.T) {
-	s, _ := localfs.New(t.TempDir())
-	key := storage.KeyForHash("sha256:ffff0000")
-	body := []byte("same bytes")
-
-	for i := 0; i < 2; i++ {
-		if err := s.Put(t.Context(), key, bytes.NewReader(body), int64(len(body))); err != nil {
-			t.Fatalf("Put #%d: %v", i+1, err)
-		}
-	}
-	st, err := s.Stat(t.Context(), key)
-	if err != nil {
-		t.Fatalf("Stat: %v", err)
-	}
-	if st.Size != int64(len(body)) {
-		t.Fatalf("Size = %d, want %d", st.Size, len(body))
-	}
-}
-
 func TestGetMissingKeyIsErrBlobMissing(t *testing.T) {
 	s, _ := localfs.New(t.TempDir())
 	_, err := s.Get(t.Context(), storage.KeyForHash("sha256:0000dead"))

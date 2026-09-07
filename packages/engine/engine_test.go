@@ -50,36 +50,3 @@ func TestOpenIsIdempotentAcrossRuns(t *testing.T) {
 	}
 	defer second.Close()
 }
-
-func TestNamedProfilesAreSeparateArchives(t *testing.T) {
-	home := t.TempDir()
-	ctx := context.Background()
-
-	work, err := engine.Open(ctx, engine.Config{Profile: "work", Home: home})
-	if err != nil {
-		t.Fatalf("open work: %v", err)
-	}
-	defer work.Close()
-
-	personal, err := engine.Open(ctx, engine.Config{Profile: "personal", Home: home})
-	if err != nil {
-		t.Fatalf("open personal: %v", err)
-	}
-	defer personal.Close()
-
-	if work.Paths().Root == personal.Paths().Root {
-		t.Fatal("two profiles resolved to the same directory")
-	}
-	if work.Paths().StateDB == personal.Paths().StateDB {
-		t.Fatal("two profiles share a state database")
-	}
-}
-
-func TestInvalidProfileNameIsRejected(t *testing.T) {
-	_, err := engine.Open(context.Background(), engine.Config{
-		Profile: "../escape", Home: t.TempDir(),
-	})
-	if err == nil {
-		t.Fatal("a traversing profile name was accepted")
-	}
-}

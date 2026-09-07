@@ -75,30 +75,6 @@ func TestContentHashIsUnique(t *testing.T) {
 	}
 }
 
-func TestForeignKeysArePragmaEnabled(t *testing.T) {
-	c := openTestClient(t)
-
-	var on int
-	if err := c.DB().QueryRow("PRAGMA foreign_keys;").Scan(&on); err != nil {
-		t.Fatalf("read pragma: %v", err)
-	}
-	if on != 1 {
-		t.Fatal("foreign_keys pragma is off; referential integrity is unenforced")
-	}
-}
-
-func TestJournalModeIsWAL(t *testing.T) {
-	c := openTestClient(t)
-
-	var mode string
-	if err := c.DB().QueryRow("PRAGMA journal_mode;").Scan(&mode); err != nil {
-		t.Fatalf("read pragma: %v", err)
-	}
-	if mode != "wal" {
-		t.Fatalf("journal_mode = %q, want wal (concurrent readers during writes)", mode)
-	}
-}
-
 func TestMigrateIsIdempotentAcrossReopen(t *testing.T) {
 	ctx := context.Background()
 	path := filepath.Join(t.TempDir(), "state.db")

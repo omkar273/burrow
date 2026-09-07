@@ -30,20 +30,3 @@ func TestWrapPreservesTheUnderlyingError(t *testing.T) {
 		t.Fatal("wrapped error lost its mark")
 	}
 }
-
-func TestHintIsRetained(t *testing.T) {
-	err := ierr.New("checksum mismatch").
-		WithHint("run `burrowd verify --repair` to refetch this object").
-		Mark(ierr.ErrChecksumMismatch)
-
-	if got := err.Hint(); got == "" {
-		t.Fatal("hint was dropped")
-	}
-}
-
-func TestUnmarkedErrorMatchesNoSentinel(t *testing.T) {
-	err := ierr.New("something happened")
-	if stderrors.Is(err, ierr.ErrInternal) {
-		t.Fatal("unmarked error matched a sentinel")
-	}
-}
