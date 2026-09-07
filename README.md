@@ -1,335 +1,304 @@
-# Burrow
+<p align="center">
+  <img src="logo.png" alt="Burrow — a protected place for your data" width="220" />
+</p>
 
-**Your SaaS data. Your storage. Your copy.**
+<h1 align="center">Burrow</h1>
 
-Burrow is an open-source, local-first data ownership and recovery layer for SaaS. It continuously copies the data you care about into storage you control, checks that the copy can actually be restored, and gives you one place to search, recover, and take it with you.
+<p align="center"><strong>Your SaaS data. Your storage. Your copy.</strong></p>
 
-A backup job that finished is not the same thing as data you can get back. Burrow is built around that difference.
+<p align="center">
+  Burrow keeps an independent, verifiable copy of the data your business<br />
+  depends on — in storage you control.
+</p>
 
-> A safe place for your data — without making Burrow the next place you are locked in.
+<p align="center">
+  <a href="#try-it"><strong>Get started</strong></a>
+  &nbsp;·&nbsp;
+  <a href="#how-it-works">See how it works</a>
+</p>
 
-<!-- TODO: add CI badge when the workflow exists -->
+<p align="center">
+  Local-first · Cloud-optional · Open at the core
+</p>
+
+<br />
+
+Your email lives in Google.
+
+Your documents live in Drive.
+
+Your conversations live in Slack.
+
+Your code lives in GitHub.
+
+Your business lives across all of them.
+
+**Your copy doesn’t.**
+
+SaaS makes data easy to use. That is not the same as owning it. An account can be deleted, compromised, misconfigured, overwritten, held behind a retention window, or simply unreachable when you need it most.
+
+Keep another copy. Make it yours.
+
+A backup isn’t a backup until you know you can recover from it.
 
 ---
 
-## Why Burrow?
+## What Burrow is
 
-Businesses run on SaaS: Gmail, Drive, Microsoft 365, Slack, GitHub, Notion. Those products are excellent systems of record. They are not the same as an independent copy you own.
+Burrow is a local-first, cloud-optional **data ownership and recovery layer** for SaaS.
 
-Provider recovery is bounded by *their* windows, *their* formats, and *their* account remaining available. DIY scripts leave you with credentials, checkpoints, retries, and a restore you have never rehearsed.
+It copies the records that matter out of the tools you already use, puts them in storage you choose, checks that the copy can actually come back, and gives you one place to search, restore, and leave with everything.
 
-Burrow sits in between:
+Backup is the mechanism. **Ownership, recoverability, and portability are the product.**
 
-- **Ownership** — the copy lives in storage you choose (disk, NAS, S3-compatible, R2).
-- **Recoverability** — sync is not “healthy” until restore has been proven.
-- **Portability** — you can leave with a real archive, not a Docker volume and a prayer.
-- **Choice of runtime** — run it on your machine, or let a managed cloud run the same engine. Convenience is optional. Ownership is not.
-
-Burrow is not a storage company, not an automation canvas, and not “Dropbox for email.” It protects **your independent copy** of SaaS data.
-
-Priorities, in order:
+Burrow gives your data another home — quietly, independently, and without becoming the next place you’re trapped.
 
 ```text
-Ownership → Portability → Recoverability → Reliability → Convenience
+             SaaS
+              │
+              ▼
+        ┌─────────────┐
+        │   Burrow    │
+        │             │
+        │  Sync       │
+        │  Verify     │
+        │  Index      │
+        │  Recover    │
+        └──────┬──────┘
+               │
+       ┌───────┴────────┐
+       ▼                ▼
+   Your storage     Another replica
 ```
+
+Run it on your machine. Or let a hosted runtime do the watching. Convenience is optional. The copy is not.
 
 ---
 
-## What it does
+## What you get
 
-```text
-Source → ingest → canonical objects → state + jobs → replica(s) → verify → search / restore / export
-```
+**Keep a copy.** Continuously pull important data from the SaaS tools your business already depends on.
 
-| Piece | Role |
-| --- | --- |
-| **Source** | Knows how to read a provider (Gmail first) without pretending every SaaS looks the same. |
-| **Object** | Stable logical record inside Burrow — identity, metadata, content refs, integrity, lineage. |
-| **Storage** | Replaceable backend. Local filesystem and S3-compatible APIs first. |
-| **Runtime** | Where the engine runs: your machine, or managed infrastructure. Same logic either way. |
-| **Consumption** | Search, inspect, restore, export, health — proof that the copy is usable. |
+**Put it where you want.** A folder on disk. S3-compatible storage. R2. NAS as adapters land. Your bucket, your disk — not ours.
 
-Content is hashed for integrity and deduplication. Logical object IDs stay separate from “this blob’s checksum” and from “Gmail’s message id.” That split is what lets you change storage without renaming the archive.
+**Know that it actually worked.** “Sync completed” is not the finish line. Burrow cares whether objects are intact, consistent, and restorable.
+
+**Find what you need.** Search the independent copy instead of hunting through five products when something goes missing.
+
+**Get it back.** Restore to the original account, another account, a local download, or a portable archive.
+
+**Leave whenever you want.** Export in a form that still makes sense if Burrow isn’t there tomorrow.
+
+That last one is load-bearing. Burrow should never become the next place you’re locked into.
 
 ---
 
 ## How it works
 
-```mermaid
-flowchart TD
-  S[SaaS sources] --> I[Ingestion]
-  I --> O[Canonical objects]
-  O --> ST[State + job queue]
-  O --> R1[Replica A]
-  O --> R2[Replica B]
-  R1 --> V[Verification]
-  R2 --> V
-  ST --> V
-  V --> C[Search / restore / export]
-```
-
-Ingestion is **at-least-once**. Writes are **idempotent**. A job can run twice without corrupting the archive. Checkpoints, reconciliation, retries with backoff, and rate limits are part of the engine, not an afterthought.
-
-Push notifications (where a provider offers them) are **triggers, not truth**. Periodic reconciliation still has to close the gaps.
-
-A replica that has never been restored is treated as an assumption, not a green checkmark.
-
----
-
-## Architecture
-
-Burrow is a **modular monolith** in a **monorepo**, with more than one way to *start* the same engine:
-
-- a local agent/daemon
-- an HTTP API
-- a web UI
-- a cloud worker
-- a CLI for ops and debugging
-
-It is not a microservices platform. Module boundaries exist so Gmail does not import S3, recovery does not import a Google client, and the UI does not become the source of truth. Those packages can move later. They do not need a network hop today.
-
-```mermaid
-flowchart LR
-  subgraph engine [Core engine]
-    D[Domain]
-    C[Sync / reconcile]
-    Rec[Recovery]
-  end
-  Local[Local runtime] --> engine
-  Cloud[Cloud runtime] --> engine
-  Local --- Lnotes[SQLite + local disk + local queue]
-  Cloud --- Cnotes[Postgres + object storage + managed queue]
-```
-
-Local and cloud should share business logic. What changes is **placement**: SQLite and a filesystem on a laptop; Postgres and a queue when someone is paying for always-on. The logical archive does not change because the process moved.
-
-The current implementation direction is TypeScript (Bun for local dev and the first local runtime), a React UI, SQLite at home, Postgres in hosted deployments, and S3-compatible object storage. Those are **engineering choices**, not the product. Storage and runtime are supposed to stay replaceable.
-
----
-
-## Current status
-
-The project is **early**. The product thesis and architecture are in place; the first recovery loop is not shipped yet. Treat everything below as intent unless a section says otherwise.
-
-### Now
-
-- Product definition, architecture, and this repository
-- No supported production release yet
-
-### In development
-
-- Canonical object model and storage/source contracts
-- Local runtime (SQLite, filesystem, job queue)
-- Gmail + attachments: incremental sync, checkpoint, reconcile, restore
-- Search against the local catalog
-- Portable archive import/export
-- Web UI for health, inspect, search, and restore
-
-### Planned
-
-- Second replica (S3-compatible / R2)
-- Google Drive, Microsoft 365, Slack, GitHub, Notion, and other sources — **not available today**
-- Customer-controlled encryption keys
-- Hosted Burrow Cloud and enterprise controls (see [License](#license))
-
-Do not assume a connector exists because it appears on a roadmap list.
-
----
-
-## Example workflow
-
-The loop we are building toward (not a screenshot of a finished app):
-
-1. Install the local runtime (or run the container).
-2. Connect Google Workspace / Gmail with least-privilege access.
-3. Choose storage you control — a folder, or a bucket you already own.
-4. Let Burrow ingest and verify.
-5. Search and preview from the archive, not only from Gmail.
-6. Delete a message in Gmail on purpose. Restore it from Burrow. Confirm it matches.
-
-If step 6 has never succeeded, the dashboard should not pretend you are protected.
-
----
-
-## Storage
-
-Burrow talks to storage through an interface. The first backends are the **local filesystem** and **S3-compatible** APIs (including R2). NAS and other adapters can follow the same contract.
-
-The point is not to pick a clever bucket. The point is that **your storage stays yours and can be swapped**. Burrow should not become a proprietary silo that happens to have ingested Gmail.
-
-Customer content and control-plane metadata stay conceptually separate. Docker is a way to run the process. It is not the archive.
-
----
-
-## Recovery and portability
-
-Restore is a product surface, not a footnote. Targets we care about:
-
-- back into the original account
-- into another account
-- download / files on disk
-- a full **portable archive**
-
-An export is meant to reconstruct logical application state on another Burrow runtime — another machine, another operator, no original volume required. Roughly:
+The product is a loop, not a dashboard widget.
 
 ```text
-manifest, schema version, database snapshot,
-objects, indexes, config metadata, encryption metadata, checksums
+CONNECT → COPY → VERIFY → SEARCH → RECOVER → EXPORT
 ```
 
-Secrets are not dumped as plaintext. Re-authenticate or unwrap with keys you control.
+| | |
+| --- | --- |
+| **Connect** | Link a source. Gmail is the first one we are building. |
+| **Copy** | Ingest into a canonical archive, then onto storage you control. |
+| **Verify** | Checksums, completeness, consistency — not just a successful job. |
+| **Search** | Find a message, a file, a version in *your* copy. |
+| **Recover** | Put it back where it belongs, or somewhere else. |
+| **Export** | Walk away with the archive. Secrets stay out of the plaintext dump. |
 
-> Export means leaving with your data, not copying a disk image of Burrow.
+The loop we are aiming at, in one sitting:
 
----
+Connect Gmail → choose your storage → let it copy → delete a message on purpose → restore it from Burrow → confirm it matches.
 
-## Reliability
-
-The engine is built around incremental sync, durable checkpoints, pagination, duplicate detection, checksums, verification, credential expiry, interrupted runs, and snapshots of Burrow’s *own* state.
-
-We prefer boring, testable guarantees over pretending the network is exactly-once.
-
----
-
-## Security principles
-
-No theater, no “enterprise-grade” sticker.
-
-- OAuth tokens encrypted at rest; envelope encryption as the direction of travel
-- Customer-held keys as a later capability, not a claim for v0
-- Least-privilege scopes on providers
-- Restore and export should be auditable
-- Customer content is not a telemetry source
-- No plaintext secret export
-
-If a control is not implemented yet, it is not listed as a feature.
+If that last step has never worked, you are not protected. You have a log line.
 
 ---
 
-## Getting started
+## Your data should remain yours
 
-Commands below are the **intended** developer flow. The app is not wired up in this tree yet — treat them as the target, not a verified quickstart.
+```text
+Typical SaaS                         Burrow
+
+Your data                            Your data
+    ↓                                    ↓
+Provider                             Burrow
+    ↓                                    ↓
+Provider storage                     Your storage
+    ↓                                    ↓
+Provider recovery                    Your independent copy
+```
+
+Burrow is in the path. It is not supposed to *be* the destination.
+
+Storage is a replaceable layer: local filesystem and S3-compatible APIs first. Docker packages the process; it is not the archive. A real export reconstructs logical state — manifest, schema version, snapshot, objects, checksums — on another machine, without the original volume.
+
+> Everything required to own and recover your data is open.
+
+---
+
+## A green sync icon isn’t enough
+
+A job that finished is an event. Recoverability is a **property**.
+
+Burrow is being designed so “healthy” means more than a checkmark:
+
+- the objects you think you have are actually there
+- metadata still makes sense
+- checksums match
+- storage isn’t quietly corrupt
+- a restore has been proven, not assumed
+
+**Burrow treats recoverability as a first-class product property.**
+
+Ingestion is at-least-once. Writes are idempotent. Provider push events are triggers, not the source of truth. Reconciliation still has to close the gaps. Boring on purpose.
+
+---
+
+## Where it sits
+
+```text
+              ┌─────────────┐
+              │ SaaS sources│
+              └──────┬──────┘
+                     │
+                     ▼
+              ┌─────────────┐
+              │   Burrow    │
+              └──────┬──────┘
+                     │
+          ┌──────────┼──────────┐
+          ▼          ▼          ▼
+       Local FS     S3 / R2      NAS
+          │          │          │
+          └──────────┼──────────┘
+                     ▼
+              Your independent
+                     copy
+```
+
+Self-hosting is a first-class design goal, not a community afterthought. A managed cloud, when it exists, is the same idea with the lights left on — you still bring the storage if you want to.
+
+---
+
+## Open core
+
+The software you need to **own, copy, verify, search, restore, and export** is licensed under **[AGPLv3](https://www.gnu.org/licenses/agpl-3.0.html)**.
+
+AGPL is copyleft. It is not “non-commercial,” and it does not forbid forks. If you run a modified Burrow as a network service, you owe people the source.
+
+Organizational-scale operation can be commercial later: SSO, SCIM, tighter RBAC, retention and legal hold, central admin, MSP, support, a managed cloud. That list is **direction**, not a catalog. You should not need a paid edition to keep a copy of your mail.
+
+```text
+Burrow Community          Burrow Cloud              Burrow Enterprise
+Open source               Managed infrastructure    Controls, compliance
+Self-hosted               Pay for convenience       Support
+```
+
+This repository is the project. It is not a pricing page.
+
+**Burrow**, the logo, and the mascot are trademarks. Fork the code; don’t pretend to *be* Burrow.
+
+---
+
+## Where we are
+
+The idea is sharp. The first recovery loop is **not shipped**. There is no production release to install today.
+
+| | |
+| --- | --- |
+| **Available** | This repository, the product thesis, the architecture. |
+| **In progress** | Local runtime, Gmail + attachments, verify, search, restore, portable export, web UI. |
+| **Planned** | S3-compatible replica, more sources (Drive, Microsoft 365, Slack, GitHub, Notion — **none of these exist yet**), customer-held keys, hosted cloud, enterprise controls. |
+
+No connector is real until it restores. Roadmap names are not features.
+
+---
+
+## Try it
+
+<a id="try-it"></a>
+
+When the local runtime lands, trying Burrow should feel like: install (or run a container), connect one source, point at storage you already own, wait, then recover something on purpose.
+
+Until then, this is the **intended** developer entry — not a verified quickstart. The tree is not runnable yet.
 
 ```bash
 git clone https://github.com/<org>/burrow.git   # TODO: canonical remote
 cd burrow
-bun install                                     # TODO: confirm workspace install
-bun dev                                         # TODO: confirm dev script
+bun install                                     # TODO: workspace install
+bun dev                                         # TODO: dev script
 ```
 
-Self-hosting / Docker packaging will land with the local runtime. There is nothing production-ready to `docker compose up` today.
-
-<!-- TODO: link to docs once they exist -->
+<!-- TODO: docs, Docker Compose, CI badge -->
 
 ---
 
-## Development
+## Under the hood
 
-Work happens in the monorepo. The current toolchain direction is Bun for install, scripts, and the first local process; Vite for the web app.
+<a id="how-it-works"></a>
 
-```bash
-bun test          # TODO: package scripts
-bun run lint      # TODO: package scripts
-```
+Burrow is a **monorepo** with a **modular core** and several ways to start the same engine: local agent, API, web UI, cloud worker, CLI.
 
-Please keep provider-specific code inside connectors, storage-specific code inside storage adapters, and recovery independent of both.
-
-See [Contributing](#contributing).
-
----
-
-## Repository structure
-
-This is the **module map we are implementing**, not a promise that every folder already exists. Boundaries will move; the idea will not: one engine, several entrypoints, no distributed spaghetti.
+It is not microservices. Packages exist so a connector cannot swallow storage, and so recovery does not depend on Gmail remaining in the room.
 
 ```text
-burrow/
-  apps/
-    web/              # Web UI
-    api/              # HTTP API / control plane
-    agent/            # Local runtime / daemon
-    worker/           # Cloud / background worker
-    cli/              # Ops and debug CLI
-
-  packages/
-    domain/           # Canonical objects, IDs, invariants
-    core/             # Sync, reconciliation, idempotency
-    connectors/       # SaaS sources
-    storage/          # Storage port + adapters
-    state/            # Durable state
-    queue/            # Job queue
-    archive/          # Import/export format
-    recovery/         # Restore + verification
-    search/           # Search port
-    crypto/           # Encryption / keys
-    observability/    # Logs, metrics, traces
-    contracts/        # API and domain contracts
-    ui/               # Shared UI
+                    Core engine
+                         │
+              ┌──────────┴──────────┐
+              │                     │
+        Local runtime          Cloud runtime
+        SQLite + local FS      Postgres + queue
+        your machine           managed infrastructure
 ```
 
-`apps/*` are how you *run* Burrow. `packages/*` are how you *change* Burrow without turning every feature into a service.
+Same objects. Same recovery semantics. Different placement.
 
----
+Connectors read providers. Canonical objects are the archive. Storage adapters hold bytes. State and a job queue keep work durable. Verification and search sit on top. Runtime is just where that runs.
 
-## Roadmap (short)
+The current implementation direction is TypeScript, Bun for local development and the first local process, SQLite at home, Postgres when hosted, S3-compatible object storage. Those are choices. They are not the identity of the product.
 
-1. Prove **one** loop: Gmail → local catalog + disk → search → restore.
-2. Add an S3-compatible replica and independent verify.
-3. Portable archive round-trip.
-4. More sources, without weakening the object model.
-5. Optional hosted runtime — same engine, different placement.
+Push is a hint. Reconciliation is the backstop. A restore test is the acceptance criteria.
 
----
+### Repository map
 
-## Contributing
+This is the layout we are implementing. Folders will move. The split — apps run Burrow, packages *are* Burrow — should not.
 
-The useful contributions right now are the recovery loop, connector correctness, storage adapters, and tests that fail when restore would fail.
+```text
+apps/        web, api, agent, worker, cli
+packages/    domain, core, connectors, storage, state, queue,
+             archive, recovery, search, crypto, observability,
+             contracts, ui
+```
+
+### Develop
+
+```bash
+bun test          # TODO
+bun run lint      # TODO
+```
+
+Keep provider code in connectors, bytes in storage adapters, restore independent of both.
+
+Useful work right now: the Gmail loop, storage adapters, and tests that go red when restore would fail. Open an issue before large design swings.
 
 <!-- TODO: CONTRIBUTING.md -->
-<!-- TODO: Code of Conduct -->
-
-Open an issue before large design changes. Matching existing module boundaries matters more than adding a new framework.
 
 ---
 
 ## License
 
-Burrow’s **core** is licensed under the [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.html) (AGPLv3).
+Core: **[GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.html)**.
 
-<!-- TODO: add LICENSE file to the repository -->
+<!-- TODO: add LICENSE to the repo -->
 
-AGPLv3 is a copyleft license. It does not mean “non-commercial” and it does not forbid forks. It means that if you run a modified Burrow as a network service, you owe the source to the people who use it.
-
-**Everything required to own, back up, verify, restore, search, and export your data belongs in the open core** — engine, connectors, storage adapters, local runtime, checksums, dedupe, encryption of credentials, verification, search, restore, import/export.
-
-### Open core
-
-A commercial layer may exist for **operating Burrow at organizational scale**, for example:
-
-- SSO / SAML, SCIM, advanced RBAC
-- compliance-oriented audit, retention, legal hold
-- centralized admin, MSP / multi-tenant operations
-- managed Burrow Cloud, support, SLAs
-
-Those are **planned commercial capabilities**, not a current product catalog. You should not need a paid edition to keep an independent copy of your mail.
-
-> Everything required to own and recover your data is open.  
-> Everything primarily required to operate Burrow at organizational scale can be commercial.
-
-Community / self-hosted core stays AGPLv3. A hosted cloud and an enterprise offering may come later. This repository is the project, not a pricing page.
+Everything required to own and recover your data stays in that core.
 
 ---
 
-## Trademark
+Questions, ideas, and the first connectors: GitHub issues.
 
-**Burrow**, the logo, mascot, and related marks are brand assets. The AGPL covers the software. It does not grant rights to use the name or artwork in a way that implies you are the Burrow project. Fork the code; don’t impersonate the burrow.
-
----
-
-## Community
-
-<!-- TODO: discussions, Discord/Matrix, security contact -->
-
-For now, use GitHub issues.
-
-If you are evaluating Burrow: it exists so SaaS is not the only place your records live, so restore is a habit rather than a story, and so the copy can move when you do.
+<!-- TODO: security contact, community space -->
