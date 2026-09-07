@@ -1,7 +1,7 @@
 # M0 Spike Findings
 
 **Date:** 2026-09-07
-**Plan:** [2026-09-07-engine-m0-m1.md](2026-09-07-engine-m0-m1.md)
+**Spec:** [engine.md](engine.md)
 **Status:** all questions answered. **The thesis holds.**
 
 Spike code was throwaway and is not in the tree. Toolchain: Go 1.25.14 darwin/arm64,
