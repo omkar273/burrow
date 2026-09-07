@@ -4,7 +4,6 @@ package object
 
 import "time"
 
-// Kind is the family of thing an object represents.
 type Kind string
 
 const (
@@ -12,9 +11,8 @@ const (
 	KindAttachment Kind = "attachment"
 )
 
-// Object is a logical thing in the archive. Its ID is ours and stable
-// forever; ExternalID is a provider fact we record but never build
-// identity on.
+// ID is ours and stable forever. ExternalID is a provider fact we record
+// but never build identity on.
 type Object struct {
 	ID          string
 	SourceID    string
@@ -27,11 +25,8 @@ type Object struct {
 	DeletedAtSource *time.Time
 }
 
-// Alias is an additional provider ID that resolves to the same Object.
-//
-// Restoring a message creates a new provider ID for content we already
-// hold; recording it as an alias is what stops restore from forking the
-// archive.
+// Restoring a message mints a new provider ID for content we already
+// hold. Recording it as an alias is what stops restore forking the archive.
 type Alias struct {
 	ObjectID   string
 	SourceID   string
@@ -39,8 +34,6 @@ type Alias struct {
 	CreatedAt  time.Time
 }
 
-// Version is an Object's content at a point in time.
-//
 // Gmail RAW bytes are immutable, so every Gmail message has exactly one
 // version forever. This type is therefore unexercised beyond N=1 until a
 // mutable source arrives — treat the first such connector as validating

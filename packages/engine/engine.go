@@ -23,10 +23,7 @@ import (
 	"github.com/omkar273/burrow/packages/engine/internal/storage/localfs"
 )
 
-// Config selects which archive to open.
-//
-// Profile and Home are plain strings rather than resolved types so that
-// nothing from internal/ crosses the boundary.
+// Plain strings, so nothing from internal/ crosses the boundary.
 type Config struct {
 	// Profile names the archive. Empty means the BURROW_PROFILE
 	// environment variable, then "default".
@@ -35,7 +32,6 @@ type Config struct {
 	Home string
 }
 
-// Paths reports where an opened archive lives on disk.
 type Paths struct {
 	Profile   string
 	Root      string
@@ -43,8 +39,7 @@ type Paths struct {
 	ObjectDir string
 }
 
-// Engine is an opened archive. It is not safe for concurrent use by
-// multiple goroutines until the job engine lands.
+// Engine is not safe for concurrent use until the job engine lands.
 type Engine struct {
 	profile config.Profile
 	state   *entrepo.Client
@@ -55,8 +50,7 @@ type Engine struct {
 	sources source.Repository
 }
 
-// Open resolves the profile, applies pending migrations, and prepares
-// storage. The caller must Close the result.
+// The caller must Close the result.
 func Open(ctx context.Context, cfg Config) (*Engine, error) {
 	home := cfg.Home
 	if home == "" {
@@ -100,7 +94,6 @@ func Open(ctx context.Context, cfg Config) (*Engine, error) {
 	}, nil
 }
 
-// Paths reports where this archive lives.
 func (e *Engine) Paths() Paths {
 	return Paths{
 		Profile:   e.profile.Name,
@@ -110,7 +103,6 @@ func (e *Engine) Paths() Paths {
 	}
 }
 
-// Close releases the archive's resources.
 func (e *Engine) Close() error {
 	if e.state == nil {
 		return nil

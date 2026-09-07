@@ -15,7 +15,6 @@ import (
 
 type objectRepository struct{ c *Client }
 
-// NewObjectRepository returns the ent-backed object repository.
 func NewObjectRepository(c *Client) object.Repository { return &objectRepository{c: c} }
 
 func objectFromEnt(o *generated.Object) object.Object {

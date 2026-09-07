@@ -2,7 +2,7 @@
 //
 // It is a thin consumer of packages/engine: everything it can reach is
 // the engine's public surface, which is what keeps the engine's internals
-// free to change. Commands land in Task 13 of the M0/M1 plan.
+// free to change.
 package main
 
 import (

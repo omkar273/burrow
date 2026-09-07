@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-// Stat is what a backend can report about a stored object.
 type Stat struct {
 	Size       int64
 	ModifiedAt time.Time
@@ -23,7 +22,6 @@ type Caps struct {
 	AtomicRename bool
 }
 
-// Store is a driven adapter port: content in, content out, by key.
 type Store interface {
 	Put(ctx context.Context, key string, r io.Reader, size int64) error
 	Get(ctx context.Context, key string) (io.ReadCloser, error)

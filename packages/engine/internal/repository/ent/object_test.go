@@ -74,9 +74,8 @@ func TestGetMissingObjectIsErrNotFound(t *testing.T) {
 	}
 }
 
-// A restored message arrives back from Gmail under a new provider ID.
-// Resolving it must return the ORIGINAL object, not mint a second one —
-// otherwise every restore forks the archive.
+// A restored message comes back under a new provider ID. If it did not
+// resolve to the original object, every restore would fork the archive.
 func TestAliasResolvesToTheOriginalObject(t *testing.T) {
 	ctx := context.Background()
 	c := openTestClient(t)
@@ -143,8 +142,7 @@ func TestCurrentVersionReturnsTheLatest(t *testing.T) {
 	}
 }
 
-// Ingest resolves a content hash back to the object that owns it. This is
-// what lets restored content attach as an alias instead of forking.
+// Lets ingest attach restored content as an alias instead of forking.
 func TestOwnerOfBlobFindsTheObject(t *testing.T) {
 	ctx := context.Background()
 	c := openTestClient(t)

@@ -8,20 +8,16 @@ import (
 	basemixin "github.com/omkar273/burrow/packages/engine/ent/schema/mixin"
 )
 
-// sqliteText maps a Go string to SQLite's text type.
 var sqliteText = map[string]string{"sqlite3": "text"}
 
-// Object is a logical thing in the archive.
 type Object struct {
 	ent.Schema
 }
 
-// Mixin of the Object.
 func (Object) Mixin() []ent.Mixin {
 	return []ent.Mixin{basemixin.BaseMixin{}}
 }
 
-// Fields of the Object.
 func (Object) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").SchemaType(sqliteText).Immutable().Unique(),
@@ -36,7 +32,6 @@ func (Object) Fields() []ent.Field {
 	}
 }
 
-// Indexes of the Object.
 func (Object) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("source_id", "external_id").Unique(),

@@ -4,13 +4,10 @@ package source
 
 import "time"
 
-// Kind identifies the connector family.
 type Kind string
 
-// KindGmail is the only connector in V1.
 const KindGmail Kind = "gmail"
 
-// Status is the operational state of a connection.
 type Status string
 
 const (
@@ -19,11 +16,8 @@ const (
 	StatusDisconnected Status = "disconnected"
 )
 
-// Source is one connected account.
-//
-// Multiple accounts within one profile are simply multiple Sources: they
-// share a blob store, so a message sent to two of your addresses is
-// stored once.
+// Multiple accounts in one profile are just multiple Sources sharing a
+// blob store, so a message sent to two of your addresses is stored once.
 type Source struct {
 	ID           string
 	Kind         Kind

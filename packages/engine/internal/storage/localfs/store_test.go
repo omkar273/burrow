@@ -79,9 +79,7 @@ type errReader struct{ err error }
 
 func (r errReader) Read([]byte) (int, error) { return 0, r.err }
 
-// A crash mid-write must never leave a partial file at the real key.
-// Writes go to a temp file and are renamed only after fsync, so a reader
-// sees either nothing or the complete object.
+// Temp file, fsync, then rename: a reader sees nothing or the whole object.
 func TestPartialWritesAreNeverVisibleAtTheFinalKey(t *testing.T) {
 	root := t.TempDir()
 	s, _ := localfs.New(root)
@@ -100,8 +98,6 @@ func TestPartialWritesAreNeverVisibleAtTheFinalKey(t *testing.T) {
 	}
 }
 
-// The temp file from a failed write must not linger and must never be
-// mistaken for a stored object.
 func TestFailedWritesLeaveNoTempFiles(t *testing.T) {
 	root := t.TempDir()
 	s, _ := localfs.New(root)

@@ -23,12 +23,10 @@ const (
 	PrefixBackend IDPrefix = "bkd"
 )
 
-// NewID returns a k-sortable identifier in the given family.
 func NewID(p IDPrefix) string {
 	return string(p) + "_" + ulid.Make().String()
 }
 
-// HasPrefix reports whether id belongs to the given family.
 func HasPrefix(id string, p IDPrefix) bool {
 	return strings.HasPrefix(id, string(p)+"_")
 }

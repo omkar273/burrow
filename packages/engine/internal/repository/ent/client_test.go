@@ -8,9 +8,8 @@ import (
 	entrepo "github.com/omkar273/burrow/packages/engine/internal/repository/ent"
 )
 
-// openTestClient opens a migrated, empty database in a temp directory.
-// Tests use a real SQLite file rather than a mocked client: the point of
-// these tests is that the schema and the driver actually work.
+// A real SQLite file, not a mock: these tests exist to prove the schema
+// and the driver actually work.
 func openTestClient(t *testing.T) *entrepo.Client {
 	t.Helper()
 	dsn := entrepo.FileDSN(filepath.Join(t.TempDir(), "state.db"))
@@ -67,9 +66,8 @@ func TestContentHashIsUnique(t *testing.T) {
 		t.Fatalf("first create: %v", err)
 	}
 
-	// A second blob row with the same content hash must be rejected.
-	// Content addressing is the mechanism that makes restore safe from
-	// duplicating objects; a duplicate hash row would defeat it.
+	// Content addressing is what keeps restore from duplicating objects.
+	// A duplicate hash row would defeat it.
 	if _, err := c.Ent().Blob.Create().
 		SetID("blob_01J000000000000000000002").
 		SetContentHash(hash).SetSizeBytes(1).Save(ctx); err == nil {

@@ -3,7 +3,6 @@
 // not an API.
 package errors
 
-// Code is the machine-readable classification of a failure.
 type Code string
 
 const (
@@ -25,7 +24,6 @@ type sentinel struct {
 
 func (s *sentinel) Error() string { return string(s.code) + ": " + s.msg }
 
-// Code returns the classification of a sentinel error.
 func (s *sentinel) Code() Code { return s.code }
 
 func newSentinel(c Code, msg string) error { return &sentinel{code: c, msg: msg} }

@@ -8,17 +8,14 @@ import (
 	basemixin "github.com/omkar273/burrow/packages/engine/ent/schema/mixin"
 )
 
-// ObjectVersion is an Object's content at a point in time.
 type ObjectVersion struct {
 	ent.Schema
 }
 
-// Mixin of the ObjectVersion.
 func (ObjectVersion) Mixin() []ent.Mixin {
 	return []ent.Mixin{basemixin.BaseMixin{}}
 }
 
-// Fields of the ObjectVersion.
 func (ObjectVersion) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").SchemaType(sqliteText).Immutable().Unique(),
@@ -31,7 +28,6 @@ func (ObjectVersion) Fields() []ent.Field {
 	}
 }
 
-// Indexes of the ObjectVersion.
 func (ObjectVersion) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("object_id", "captured_at"),

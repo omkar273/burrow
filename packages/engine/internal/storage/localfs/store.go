@@ -19,7 +19,6 @@ const tempPrefix = ".tmp-"
 
 type store struct{ root string }
 
-// New returns a Store rooted at dir, creating it if needed.
 func New(root string) (storage.Store, error) {
 	if err := os.MkdirAll(root, 0o700); err != nil {
 		return nil, ierr.Wrap(err, "creating object root").Mark(ierr.ErrInternal)

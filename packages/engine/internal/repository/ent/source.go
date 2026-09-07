@@ -10,7 +10,6 @@ import (
 
 type sourceRepository struct{ c *Client }
 
-// NewSourceRepository returns the ent-backed source repository.
 func NewSourceRepository(c *Client) source.Repository { return &sourceRepository{c: c} }
 
 // sourceFromEnt converts a generated row to the domain struct. Generated

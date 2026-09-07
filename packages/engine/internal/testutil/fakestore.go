@@ -17,7 +17,6 @@ import (
 	"github.com/omkar273/burrow/packages/engine/internal/storage"
 )
 
-// FakeStore is an in-memory storage.Store.
 type FakeStore struct {
 	mu      sync.Mutex
 	objects map[string][]byte
@@ -27,7 +26,6 @@ type FakeStore struct {
 	PutErr error
 }
 
-// NewFakeStore returns an empty in-memory store.
 func NewFakeStore() *FakeStore {
 	return &FakeStore{objects: map[string][]byte{}}
 }

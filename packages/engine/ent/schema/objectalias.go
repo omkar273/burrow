@@ -8,19 +8,16 @@ import (
 	basemixin "github.com/omkar273/burrow/packages/engine/ent/schema/mixin"
 )
 
-// ObjectAlias is an additional provider ID resolving to the same Object.
-// Restoring content mints a new provider ID; recording it here is what
-// stops the next sync from forking the archive.
+// An extra provider ID resolving to the same Object. Restoring mints a new
+// provider ID; recording it here stops the next sync forking the archive.
 type ObjectAlias struct {
 	ent.Schema
 }
 
-// Mixin of the ObjectAlias.
 func (ObjectAlias) Mixin() []ent.Mixin {
 	return []ent.Mixin{basemixin.BaseMixin{}}
 }
 
-// Fields of the ObjectAlias.
 func (ObjectAlias) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").SchemaType(sqliteText).Immutable().Unique(),
@@ -30,7 +27,6 @@ func (ObjectAlias) Fields() []ent.Field {
 	}
 }
 
-// Indexes of the ObjectAlias.
 func (ObjectAlias) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("source_id", "external_id").Unique(),

@@ -10,6 +10,8 @@ Burrow is an independent copy of SaaS data on storage you control, that you can 
 
 **YAGNI.** Smallest change that satisfies the request. No extra connectors, packages, flags, or abstractions. No drive-by refactors. No microservices. Do not build a source because it appears in the README.
 
+**Comments earn their place.** The next reader is a developer. Do not restate what the code already says — no `// Fields of the X`, no `// NewFoo returns a Foo`, no narrating a loop. Write a comment only when it carries what the code cannot: why a non-obvious choice was made, a constraint the compiler will not enforce, or a trap the next change could spring. If deleting a comment loses nothing, delete it.
+
 **Restore is the acceptance test.** A finished copy job is not done. If the change touches copy, verify, restore, or export, the test is that you got the object back.
 
 **Verify before claiming done.** Run `make doctor`, `make test`, and `make lint` when they apply. If you did not run it, it does not work. Stubs that exit 1 are not a skip — say so.

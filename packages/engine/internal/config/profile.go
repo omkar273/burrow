@@ -14,13 +14,10 @@ import (
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
 )
 
-// EnvProfile is the environment variable that selects a profile.
 const EnvProfile = "BURROW_PROFILE"
 
-// DefaultProfile is used when neither flag nor environment selects one.
 const DefaultProfile = "default"
 
-// Profile is the resolved on-disk layout of a single archive.
 type Profile struct {
 	Name       string
 	Root       string
@@ -29,11 +26,7 @@ type Profile struct {
 	ConfigFile string
 }
 
-// ResolveProfile determines the active profile. Precedence is
-// flag, then environment, then the default.
-//
-// lookupEnv and homeDir are parameters rather than package-level lookups
-// so that tests need no global state.
+// Precedence: flag, then environment, then the default.
 func ResolveProfile(flagValue string, lookupEnv func(string) string, homeDir string) (Profile, error) {
 	name := flagValue
 	if name == "" {
@@ -78,16 +71,14 @@ func validateName(name string) error {
 	return nil
 }
 
-// Ensure creates the profile's directories if they do not exist. The mode
-// is 0700 because this tree holds an archive of the user's mail.
+// Mode is 0700: this tree holds an archive of the user's mail.
 func (p Profile) Ensure() error {
 	for _, dir := range []string{p.Root, p.ObjectDir} {
 		if err := os.MkdirAll(dir, 0o700); err != nil {
 			return ierr.Wrap(err, "creating profile directory "+dir).
 				Mark(ierr.ErrInternal)
 		}
-		// MkdirAll respects umask, which can leave group or other bits
-		// set; set the mode explicitly.
+		// MkdirAll respects umask, which can leave group or other bits set.
 		if err := os.Chmod(dir, 0o700); err != nil {
 			return ierr.Wrap(err, "setting mode on "+dir).
 				Mark(ierr.ErrInternal)

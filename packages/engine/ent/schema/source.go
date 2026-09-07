@@ -8,17 +8,14 @@ import (
 	basemixin "github.com/omkar273/burrow/packages/engine/ent/schema/mixin"
 )
 
-// Source is one connected provider account.
 type Source struct {
 	ent.Schema
 }
 
-// Mixin of the Source.
 func (Source) Mixin() []ent.Mixin {
 	return []ent.Mixin{basemixin.BaseMixin{}}
 }
 
-// Fields of the Source.
 func (Source) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").SchemaType(sqliteText).Immutable().Unique(),
@@ -28,7 +25,6 @@ func (Source) Fields() []ent.Field {
 	}
 }
 
-// Indexes of the Source.
 func (Source) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("kind", "account_email").Unique(),

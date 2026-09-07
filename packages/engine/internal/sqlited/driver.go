@@ -16,7 +16,6 @@ import (
 	sqlite "modernc.org/sqlite"
 )
 
-// DriverName is the name this package registers under.
 const DriverName = "sqlite3"
 
 func init() {

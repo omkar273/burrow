@@ -11,7 +11,6 @@ import (
 
 type blobRepository struct{ c *Client }
 
-// NewBlobRepository returns the ent-backed blob repository.
 func NewBlobRepository(c *Client) blob.Repository { return &blobRepository{c: c} }
 
 func blobFromEnt(b *generated.Blob) blob.Blob {

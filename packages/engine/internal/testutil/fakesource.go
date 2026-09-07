@@ -12,7 +12,6 @@ import (
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
 )
 
-// FakeSource is an in-memory source.Connector and source.Restorer.
 type FakeSource struct {
 	mu       sync.Mutex
 	id       string
@@ -27,12 +26,10 @@ type FakeSource struct {
 	FetchErr error
 }
 
-// NewFakeSource returns an empty in-memory provider.
 func NewFakeSource(sourceID string) *FakeSource {
 	return &FakeSource{id: sourceID, messages: map[string][]byte{}}
 }
 
-// AddMessage seeds a message at the provider.
 func (f *FakeSource) AddMessage(externalID string, body []byte) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
