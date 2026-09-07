@@ -1,9 +1,13 @@
 # Burrow Engine — V1 Design
 
-**Date:** 2026-09-07
-**Status:** Design approved; not implemented.
-**Supersedes:** the stack paragraph in [README.md](../../../README.md) ("TypeScript and Bun for … the first local runtime") and the `bun test` engine rule in [AGENTS.md](../../../AGENTS.md).
-**Source material:** [braindump/BURROW_HANDOFF.md](../../../braindump/BURROW_HANDOFF.md) §8–12, §23–35, §41–44.
+**Status:** living document. Decisions are recorded with their reasoning, and
+reversals are kept rather than rewritten — a decision that changed is more
+useful with its history than without.
+
+The implementation plan that accompanied this was retired on 2026-09-08: the
+milestones it described are built or superseded, and a stale plan is worse than
+none. Milestones M2 onward get their own when they start.
+**Source material:** [braindump/BURROW_HANDOFF.md](../../braindump/BURROW_HANDOFF.md) §8–12, §23–35, §41–44.
 
 ---
 
@@ -13,7 +17,7 @@ This spec covers the **engine**: the local process that connects to Gmail, copie
 
 The handoff's §23 "V1 must have" list is six independent subsystems. It is decomposed here into nine milestones (§9). **This spec is implemented by M0 and M1 only.** M2 onward get their own specs.
 
-**Acceptance test for the engine, per [AGENTS.md](../../../AGENTS.md):** a message deleted from Gmail is restored from Burrow, and the restored bytes hash-match the stored bytes. Not a completed job. Not a green icon.
+**Acceptance test for the engine, per [AGENTS.md](../../AGENTS.md):** a message deleted from Gmail is restored from Burrow, and the restored bytes hash-match the stored bytes. Not a completed job. Not a green icon.
 
 ---
 
@@ -302,7 +306,7 @@ notice.
 content against a real mailbox on 2026-09-08 (12,309 bytes, matching sha256).
 The acceptance criterion stands as written: byte equality, not a normalised
 comparison. `X-GM-MSGID`, `X-GM-THRID` and `X-GM-LABELS` all behave as
-documented. See the [M0 findings](../plans/2026-09-07-m0-findings.md).
+documented. See the [M0 findings](2026-09-08-imap-findings.md).
 
 ### Restore is still not idempotent
 
@@ -412,7 +416,7 @@ Each gets its own spec.
 
 ## 10. Testing
 
-Per [AGENTS.md](../../../AGENTS.md), every production function starts as a failing `go test`.
+Per [AGENTS.md](../../AGENTS.md), every production function starts as a failing `go test`.
 
 - **`FakeSource` and `FakeStore`** in `internal/testutil` — in-memory implementations so CI runs with **no Google credentials**. Without this, every future test is hostage to a live mailbox.
 - **Real SQLite in tests, not a mocked ent client** (FlexPrice's rule; cheaper for us — a temp file, no testcontainers).
@@ -420,7 +424,7 @@ Per [AGENTS.md](../../../AGENTS.md), every production function starts as a faili
 - **Atlas migration round-trip test.** SQLite cannot `ALTER COLUMN`, so Atlas performs table-rebuild migrations. This must be proven to round-trip cleanly *before* the schema is a portability contract carrying real data.
 - Table-driven tests throughout.
 
-**Contributor cost, stated plainly:** running the real Gmail path requires a Google Cloud project, an OAuth consent screen, and a throwaway account to insert into. [CONTRIBUTING.md](../../../CONTRIBUTING.md) names the Gmail loop as *the* contribution; the fakes cover most work, but this is a genuine barrier and should be documented in the contributor guide.
+**Contributor cost, stated plainly:** running the real Gmail path requires a Google Cloud project, an OAuth consent screen, and a throwaway account to insert into. [CONTRIBUTING.md](../../CONTRIBUTING.md) names the Gmail loop as *the* contribution; the fakes cover most work, but this is a genuine barrier and should be documented in the contributor guide.
 
 ---
 
@@ -428,10 +432,10 @@ Per [AGENTS.md](../../../AGENTS.md), every production function starts as a faili
 
 To be paid in the M1 PR, not deferred:
 
-- [AGENTS.md](../../../AGENTS.md) — **Done** — `go test` for the engine and binaries, `bun test` for `packages/web`; layer table added.
-- [README.md](../../../README.md) — the "TypeScript and Bun for local dev and the first local runtime" paragraph and the `packages/` tree in "Layout and stack".
-- [Makefile](../../../Makefile) / [mise.toml](../../../mise.toml) — pin Go; `test` and `lint` fan out to both toolchains; add `generate-ent` and `generate-migration`.
-- [.gitignore](../../../.gitignore) — `~/.burrow` is outside the tree, but ensure no credential path can land in it.
+- [AGENTS.md](../../AGENTS.md) — **Done** — `go test` for the engine and binaries, `bun test` for `packages/web`; layer table added.
+- [README.md](../../README.md) — the "TypeScript and Bun for local dev and the first local runtime" paragraph and the `packages/` tree in "Layout and stack".
+- [Makefile](../../Makefile) / [mise.toml](../../mise.toml) — pin Go; `test` and `lint` fan out to both toolchains; add `generate-ent` and `generate-migration`.
+- [.gitignore](../../.gitignore) — `~/.burrow` is outside the tree, but ensure no credential path can land in it.
 
 ---
 

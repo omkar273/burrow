@@ -71,5 +71,7 @@ data, not scratch space. Use a throwaway home instead: `HOME=$(mktemp -d) make m
 ## Pointers
 
 - Product and architecture: [README.md](README.md)
+- Engine design, and why each decision was made: [docs/design/engine.md](docs/design/engine.md)
+- What the IMAP spike measured: [docs/design/2026-09-08-imap-findings.md](docs/design/2026-09-08-imap-findings.md)
 - License: [LICENSE](LICENSE) (AGPLv3 or later). Marks: [TRADEMARKS.md](TRADEMARKS.md)
 - Conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
