@@ -21,7 +21,7 @@ The handoff's §23 "V1 must have" list is six independent subsystems. It is deco
 
 | # | Decision | Rationale |
 |---|---|---|
-| D1 | **Go** for the engine; TypeScript stays in `apps/web` | Single static binary, no runtime to install on a NAS. Resolves handoff §41, which left language open. |
+| D1 | **Go** for the engine; TypeScript stays in `packages/web` | Single static binary, no runtime to install on a NAS. Resolves handoff §41, which left language open. |
 | D2 | **Hexagonal / ports-and-adapters**, layer rules written into AGENTS.md | `domain/` holds models + interfaces with zero external deps; adapters implement them. Layer table format adopted from FlexPrice. |
 | D3 | **ent** ORM + **Atlas versioned migrations**; never `Schema.Create` auto-migrate | The SQLite schema is a published portability contract (§10 of the handoff — the archive bundle carries `schema-version`). Auto-migrate makes the schema an unversioned side effect of Go structs. |
 | D4 | **modernc.org/sqlite**, registered under the `sqlite3` driver name | Pure Go, FTS5 included, cross-compiles from macOS to Linux/ARM. A cgo driver forfeits the single-binary story. Needs a ~30-line wrapper because mattn registers as `sqlite3` and modernc as `sqlite`. |
@@ -46,26 +46,37 @@ The handoff's §23 "V1 must have" list is six independent subsystems. It is deco
 
 ```text
 go.mod  go.sum                        the only Go files at the repo root
-apps/
-  agent/main.go                       thin consumer of the engine facade
-  web/                                TypeScript, unchanged workspace (M9)
-packages/engine/
-  engine.go                           the entire public surface
-  ent/  ent/schema/  ent/schema/mixin/
-  migrations/versioned/               Atlas
-  internal/                           unreachable from apps/ by the compiler
-    types/ errors/ config/ sqlited/
-    domain/{object,source,blob}/      models + interfaces, zero third-party imports
-    repository/ent/                   implements domain interfaces
-    storage/  storage/localfs/        driven adapter
-    source/gmail/                     driven adapter
-    service/                          use cases: pull · restore · verify
-    testutil/                         FakeSource, FakeStore, temp-file SQLite
+packages/
+  agent/main.go                       burrowd: thin consumer of the engine facade
+  migrate/main.go                     schema migrations, with --dry-run
+  web/                                TypeScript, bun workspace (M9)
+  engine/
+    engine.go  migrate.go             the entire public surface
+    ent/  ent/schema/  ent/schema/mixin/
+    migrations/versioned/             Atlas
+    internal/                         unreachable from packages/agent by the compiler
+      types/ errors/ config/ sqlited/ validator/
+      domain/{object,source,blob}/    models + interfaces, zero third-party imports
+      repository/ent/                 implements domain interfaces
+      storage/  storage/localfs/      driven adapter
+      source/gmail/                   driven adapter
+      service/                        use cases: pull · restore · verify
+      testutil/                       FakeSource, FakeStore, temp-file SQLite
 scripts/check-layers.sh               fails the build if domain/ imports third-party
 ```
 
+One directory, `packages/`, holds both binaries and libraries. A Go `main` is
+still a package, so nothing is misfiled; a library under `apps/` would have
+been. `bun`'s workspace glob is `packages/*` and ignores directories without a
+`package.json`, so the future web app lands here too.
+
+Worth recording that this is **not** the Go convention: restic, syncthing and
+rclone all use `cmd/` for binaries plus `internal/`, and none uses `apps/` or
+`packages/`, which are JS monorepo conventions. The single-directory layout was
+chosen for consistency with the bun workspace across a polyglot repo.
+
 `packages/engine/internal/` is enforced by the compiler, not convention:
-`apps/agent` importing it is a build error. The facade in `engine.go` is
+`packages/agent` importing it is a build error. The facade in `engine.go` is
 therefore the real driving port, and the engine is embeddable — which
 matters for an AGPL core others may run in-process.
 
@@ -298,7 +309,7 @@ Per [AGENTS.md](../../../AGENTS.md), every production function starts as a faili
 
 To be paid in the M1 PR, not deferred:
 
-- [AGENTS.md](../../../AGENTS.md) — `bun test` becomes `go test` for the engine, `bun test` for `apps/web`. Add the layer table and layer rules from §3.
+- [AGENTS.md](../../../AGENTS.md) — **Done** — `go test` for the engine and binaries, `bun test` for `packages/web`; layer table added.
 - [README.md](../../../README.md) — the "TypeScript and Bun for local dev and the first local runtime" paragraph and the `packages/` tree in "Layout and stack".
 - [Makefile](../../../Makefile) / [mise.toml](../../../mise.toml) — pin Go; `test` and `lint` fan out to both toolchains; add `generate-ent` and `generate-migration`.
 - [.gitignore](../../../.gitignore) — `~/.burrow` is outside the tree, but ensure no credential path can land in it.

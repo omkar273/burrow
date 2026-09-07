@@ -3,9 +3,11 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "echo \"apps/ not scaffolded yet — next: agent + web\" && exit 1",
+    "dev": "echo \"packages/web not scaffolded yet\" && exit 1",
     "lint": "echo \"no linter yet\" && exit 1"
   }
 }
