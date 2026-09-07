@@ -51,10 +51,9 @@ packages/engine/
   cmd/burrow/                        the daemon
   cmd/migrate/                        schema migrations, with --dry-run
   ent/  ent/schema/  ent/schema/mixin/
-  migrations/versioned/               Atlas
   internal/
     types/ errors/ config/ validator/
-    sqlite/                          handle, WithTx, migrations
+    sqlite/                          handle, WithTx, Atlas migrations (embedded)
     domain/{object,source,blob}/      models + interfaces, zero third-party imports
     repository/ent/                   implements domain interfaces via Querier(ctx)
     storage/  storage/localfs/        driven adapter

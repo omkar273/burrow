@@ -49,7 +49,6 @@ generate-ent: ## Regenerate ent code from ent/schema
 
 generate-migration: ## Generate a versioned Atlas migration (NAME=<name>)
 	$(MISE) exec -- atlas migrate diff $(NAME) \
-		--dir "file://packages/engine/migrations/versioned" \
+		--dir "file://packages/engine/internal/sqlite/migrations" \
 		--to "ent://packages/engine/ent/schema" \
 		--dev-url "sqlite://dev?mode=memory&_fk=1"
-	cp packages/engine/migrations/versioned/*.sql packages/engine/internal/sqlite/migrations/
