@@ -43,12 +43,7 @@ migrate: ## Apply pending schema migrations (PROFILE=<name>)
 migrate-dry-run: ## Print pending migration statements without applying
 	$(MISE) exec -- go run ./packages/engine/cmd/migrate --dry-run $(if $(PROFILE),--profile $(PROFILE),)
 
-.PHONY: generate-ent generate-migration
+.PHONY: generate-ent
 generate-ent: ## Regenerate ent code from ent/schema
 	$(MISE) exec -- go run -mod=mod entgo.io/ent/cmd/ent generate ./packages/engine/ent/schema
 
-generate-migration: ## Generate a versioned Atlas migration (NAME=<name>)
-	$(MISE) exec -- atlas migrate diff $(NAME) \
-		--dir "file://packages/engine/internal/sqlite/migrations" \
-		--to "ent://packages/engine/ent/schema" \
-		--dev-url "sqlite://dev?mode=memory&_fk=1"

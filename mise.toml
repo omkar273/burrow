@@ -7,7 +7,6 @@ min_version = "2026.8.0"
 lockfile = true
 
 [tools]
-atlas = "latest"
 bun = "1"
 go = "1.25"
 

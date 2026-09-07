@@ -14,29 +14,15 @@ import (
 	"github.com/omkar273/burrow/packages/engine/internal/validator"
 )
 
-// Migration is one versioned schema change.
-type Migration struct {
-	Name    string
-	SQL     string
-	Applied bool
-}
-
-// MigrationPlan reports what Migrate would apply, without applying it.
+// MigrationPlan returns the statements Migrate would run, without running
+// them. Empty means the archive already matches this build's schema.
 //
-// The schema is a portability contract — another Burrow runtime reconstructs
-// an archive from it — so an operator can read the statements before they
-// touch a database holding their mail.
-func MigrationPlan(ctx context.Context, cfg Config) ([]Migration, error) {
-	return withMigrationDB(ctx, cfg, func(c *sqlitedb.Client) ([]Migration, error) {
-		pending, err := c.ListPending(ctx)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]Migration, 0, len(pending))
-		for _, p := range pending {
-			out = append(out, Migration{Name: p.Name, SQL: p.SQL})
-		}
-		return out, nil
+// The schema is a portability contract — another Burrow reconstructs an
+// archive from it — so an operator can read what will change before it
+// touches a database holding their mail.
+func MigrationPlan(ctx context.Context, cfg Config) (string, error) {
+	return withMigrationDB(ctx, cfg, func(c *sqlitedb.Client) (string, error) {
+		return c.PlanSQL(ctx)
 	})
 }
 
@@ -49,11 +35,12 @@ func SchemaVersion(ctx context.Context, cfg Config) (int, error) {
 	})
 }
 
-// Migrate applies every pending migration and returns the names applied.
-func Migrate(ctx context.Context, cfg Config) ([]string, error) {
-	return withMigrationDB(ctx, cfg, func(c *sqlitedb.Client) ([]string, error) {
-		return c.ApplyPending(ctx)
+// Migrate brings the archive up to this build's schema.
+func Migrate(ctx context.Context, cfg Config) error {
+	_, err := withMigrationDB(ctx, cfg, func(c *sqlitedb.Client) (struct{}, error) {
+		return struct{}{}, c.Migrate(ctx)
 	})
+	return err
 }
 
 // withMigrationDB resolves the profile, takes the same lock Open takes, and

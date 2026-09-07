@@ -5,7 +5,6 @@
 package sqlite
 
 import (
-	"context"
 	"database/sql"
 	"net/url"
 
@@ -61,19 +60,3 @@ func (c *Client) Ent() *generated.Client { return c.ent }
 func (c *Client) DB() *sql.DB { return c.db }
 
 func (c *Client) Close() error { return c.db.Close() }
-
-func (c *Client) Migrate(ctx context.Context) error {
-	return applyVersioned(ctx, c.db)
-}
-
-func (c *Client) ListPending(ctx context.Context) ([]Pending, error) {
-	return ListPending(ctx, c.db)
-}
-
-func (c *Client) ApplyPending(ctx context.Context) ([]string, error) {
-	return ApplyPending(ctx, c.db)
-}
-
-func (c *Client) Version(ctx context.Context) (int, error) {
-	return Version(ctx, c.db)
-}
