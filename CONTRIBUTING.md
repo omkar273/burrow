@@ -8,6 +8,8 @@ Please read the [code of conduct](CODE_OF_CONDUCT.md). Security issues go to [SE
 
 Open an issue first (or comment on an existing one) if you plan a design change or a new feature. That is how restic and rclone keep duplicate work out. Small fixes can be a pull request.
 
+AI coding agents: follow [AGENTS.md](AGENTS.md). Red-green tests for production code; YAGNI; restore is the acceptance test. You, the human, still own every line you submit.
+
 ## Develop
 
 Toolchain is [mise](https://mise.jdx.dev). `make` is the command surface.
