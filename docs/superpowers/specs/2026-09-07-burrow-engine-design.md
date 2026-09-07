@@ -53,9 +53,10 @@ packages/engine/
   ent/  ent/schema/  ent/schema/mixin/
   migrations/versioned/               Atlas
   internal/
-    types/ errors/ config/ sqlited/ validator/
+    types/ errors/ config/ validator/
+    sqlite/                          handle, WithTx, migrations
     domain/{object,source,blob}/      models + interfaces, zero third-party imports
-    repository/ent/                   implements domain interfaces
+    repository/ent/                   implements domain interfaces via Querier(ctx)
     storage/  storage/localfs/        driven adapter
     source/gmail/                     driven adapter
     service/                          use cases: pull · restore · verify

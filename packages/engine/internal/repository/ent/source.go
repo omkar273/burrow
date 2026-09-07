@@ -8,11 +8,12 @@ import (
 	generated "github.com/omkar273/burrow/packages/engine/ent"
 	"github.com/omkar273/burrow/packages/engine/internal/domain/source"
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
+	sqlitedb "github.com/omkar273/burrow/packages/engine/internal/sqlite"
 )
 
-type sourceRepository struct{ c *Client }
+type sourceRepository struct{ c *sqlitedb.Client }
 
-func NewSourceRepository(c *Client) source.Repository { return &sourceRepository{c: c} }
+func NewSourceRepository(c *sqlitedb.Client) source.Repository { return &sourceRepository{c: c} }
 
 // sourceFromEnt converts a generated row to the domain struct. Generated
 // ent types must not escape this package.
@@ -28,7 +29,7 @@ func sourceFromEnt(s *generated.Source) source.Source {
 }
 
 func (r *sourceRepository) Create(ctx context.Context, s source.Source) error {
-	err := r.c.ent.Source.Create().
+	err := r.c.Querier(ctx).Source.Create().
 		SetID(s.ID).
 		SetKind(string(s.Kind)).
 		SetAccountEmail(s.AccountEmail).
@@ -41,7 +42,7 @@ func (r *sourceRepository) Create(ctx context.Context, s source.Source) error {
 }
 
 func (r *sourceRepository) Get(ctx context.Context, id string) (source.Source, error) {
-	row, err := r.c.ent.Source.Get(ctx, id)
+	row, err := r.c.Querier(ctx).Source.Get(ctx, id)
 	if err != nil {
 		if generated.IsNotFound(err) {
 			return source.Source{}, ierr.New("no source with id " + id).Mark(ierr.ErrNotFound)
@@ -52,7 +53,7 @@ func (r *sourceRepository) Get(ctx context.Context, id string) (source.Source, e
 }
 
 func (r *sourceRepository) List(ctx context.Context) ([]source.Source, error) {
-	rows, err := r.c.ent.Source.Query().All(ctx)
+	rows, err := r.c.Querier(ctx).Source.Query().All(ctx)
 	if err != nil {
 		return nil, ierr.Wrap(err, "listing sources").Mark(ierr.ErrInternal)
 	}

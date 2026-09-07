@@ -1,7 +1,8 @@
-// Package ent adapts the generated ent client to the engine. Generated
+// Package sqlite owns the database handle, transactions, and migrations.
+// Package doc: the generated ent client to the engine. Generated
 // ent.* types must not escape this package: domain packages own their own
 // hand-written structs and FromEnt converters.
-package ent
+package sqlite
 
 import (
 	"context"
@@ -14,7 +15,6 @@ import (
 	generated "github.com/omkar273/burrow/packages/engine/ent"
 	"github.com/omkar273/burrow/packages/engine/internal/config"
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
-	"github.com/omkar273/burrow/packages/engine/internal/sqlited"
 )
 
 type Client struct {
@@ -36,7 +36,7 @@ func FileDSN(path string) string {
 func DSN(p config.Profile) string { return FileDSN(p.StateDB) }
 
 func Open(dsn string) (*Client, error) {
-	db, err := sql.Open(sqlited.DriverName, dsn)
+	db, err := sql.Open(DriverName, dsn)
 	if err != nil {
 		return nil, ierr.Wrap(err, "opening state database").Mark(ierr.ErrInternal)
 	}

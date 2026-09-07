@@ -8,16 +8,16 @@
 //
 // No Open wrapper is needed to force PRAGMA foreign_keys — the DSN
 // carries it (see internal/repository/ent.FileDSN).
-package sqlited
+package sqlite
 
 import (
 	"database/sql"
 
-	sqlite "modernc.org/sqlite"
+	modernc "modernc.org/sqlite"
 )
 
 const DriverName = "sqlite3"
 
 func init() {
-	sql.Register(DriverName, &sqlite.Driver{})
+	sql.Register(DriverName, &modernc.Driver{})
 }

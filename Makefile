@@ -52,4 +52,4 @@ generate-migration: ## Generate a versioned Atlas migration (NAME=<name>)
 		--dir "file://packages/engine/migrations/versioned" \
 		--to "ent://packages/engine/ent/schema" \
 		--dev-url "sqlite://dev?mode=memory&_fk=1"
-	cp packages/engine/migrations/versioned/*.sql packages/engine/internal/repository/ent/migrations/
+	cp packages/engine/migrations/versioned/*.sql packages/engine/internal/sqlite/migrations/

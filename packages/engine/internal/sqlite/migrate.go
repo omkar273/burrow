@@ -1,4 +1,4 @@
-package ent
+package sqlite
 
 import (
 	"context"
