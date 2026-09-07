@@ -25,10 +25,9 @@ import (
 
 // Plain strings, so nothing from internal/ crosses the boundary.
 type Config struct {
-	// Profile names the archive. Empty means the BURROW_PROFILE
-	// environment variable, then "default".
+	// Empty means the BURROW_PROFILE environment variable, then "default".
 	Profile string
-	// Home overrides the user's home directory. Empty means os.UserHomeDir.
+	// Empty means os.UserHomeDir.
 	Home string
 }
 

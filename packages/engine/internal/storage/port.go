@@ -32,8 +32,8 @@ type Store interface {
 	Capabilities() Caps
 }
 
-// KeyForHash maps a content hash to its storage key, fanning out two
-// levels so no directory holds an unreasonable number of entries.
+// Fans out two levels so no directory holds an unreasonable number of
+// entries.
 //
 // The layout is deliberately plain: an archive should be readable with
 // standard tools and no Burrow installed.

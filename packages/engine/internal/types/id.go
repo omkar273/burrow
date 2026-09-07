@@ -8,9 +8,8 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-// IDPrefix names an identity family. Prefixes exist so that the four
-// distinct identities in the archive (object, version, content, replica)
-// cannot be silently substituted for one another.
+// Prefixes exist so the four distinct identities in the archive (object,
+// version, content, replica) cannot be silently substituted.
 type IDPrefix string
 
 const (

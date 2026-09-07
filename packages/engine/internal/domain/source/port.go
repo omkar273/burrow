@@ -15,8 +15,8 @@ type ObjectRef struct {
 	ThreadID   string
 }
 
-// ObjectMeta is provider metadata that does not live in the content
-// itself — Gmail labels and internalDate have no RFC822 representation.
+// Provider metadata absent from the content itself: Gmail labels and
+// internalDate have no RFC822 representation.
 type ObjectMeta struct {
 	ExternalID   string
 	ThreadID     string

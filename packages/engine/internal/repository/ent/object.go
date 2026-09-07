@@ -146,7 +146,6 @@ func (r *objectRepository) CurrentVersion(ctx context.Context, objectID string) 
 	return versionFromEnt(row), nil
 }
 
-// OwnerOfBlob returns the object whose version references blobID.
 func (r *objectRepository) OwnerOfBlob(ctx context.Context, blobID string) (object.Object, error) {
 	version, err := r.c.ent.ObjectVersion.Query().
 		Where(entversion.BlobID(blobID)).

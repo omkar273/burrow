@@ -30,9 +30,7 @@ func (s *store) path(key string) string {
 	return filepath.Join(s.root, filepath.FromSlash(key))
 }
 
-// Put writes to a temp file, fsyncs it, then renames into place.
-//
-// A crash between those steps leaves a temp file, which is inert. The
+// A crash mid-write leaves a temp file, which is inert. The
 // alternative — writing directly to the final key — can leave a truncated
 // object that later reads as real. Because keys are content-addressed, an
 // orphaned temp file is harmless and collectable.

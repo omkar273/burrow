@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Enforce the layer rule from AGENTS.md: internal/domain/ must import
-# nothing third-party. A documented rule that nothing checks is a wish.
+# nothing third-party.
 set -euo pipefail
 
 violations=$(go list -deps ./packages/engine/internal/domain/... \
