@@ -1,5 +1,8 @@
+> [!NOTE]
+> The first recovery loop is **not shipped**. This README is the product thesis and the build. Nothing here is installable yet.
+
 <p align="center">
-  <img src="logo.png" width="96" alt="Burrow mascot" />
+  <img src="logo.png" width="88" alt="Burrow mascot" />
 </p>
 
 <h1 align="center">Burrow</h1>
@@ -14,35 +17,33 @@
 </p>
 
 <p align="center">
-  <a href="#get-your-burrow-running"><strong>Get started</strong></a>
+  <a href="#why-this-exists">Why</a>
+  &nbsp;·&nbsp;
+  <a href="#how-it-works">How</a>
   &nbsp;·&nbsp;
   <a href="#under-the-burrow">Architecture</a>
   &nbsp;·&nbsp;
-  <a href="#build-with-us">Contribute</a>
+  <a href="#where-we-are">Status</a>
+  &nbsp;·&nbsp;
+  <a href="#develop">Develop</a>
 </p>
 
 <p align="center">Open source · Self-hostable · Cloud-optional</p>
 
 <p align="center">
-  <img src="docs/assets/burrow-hero.png" alt="Mascot beside a burrow, abstract data objects arriving" width="920" />
+  <img src="docs/assets/burrow-hero.png" width="920" alt="Mascot beside a burrow as mail, files, and records arrive" />
 </p>
 
 ---
 
+## Why this exists
+
 <p align="center">
-  <img src="docs/assets/burrow-problem.png" alt="Mascot looking up at scattered, unowned data" width="720" />
+  <img src="docs/assets/sources.svg" alt="Gmail, Drive, Slack, GitHub — your business lives here. Where is the independent copy?" />
 </p>
 
 <p align="center">
-  <img src="docs/assets/sources.svg" alt="Gmail, Drive, Slack, GitHub — where is the independent copy?" />
-</p>
-
-<p align="center"><strong>Your business runs on SaaS. Your independent copy shouldn't have to.</strong></p>
-
----
-
-<p align="center">
-  <img src="docs/assets/aha.svg" alt="Access and sync checked; recovery still a question" />
+  <img src="docs/assets/aha.svg" alt="Access and sync are checked; recovery is still a question" />
 </p>
 
 <details>
@@ -55,35 +56,43 @@ Being able to open Gmail does not mean you have an independent copy.
 <details>
 <summary>Sync is not recovery</summary>
 
-A completed job does not prove you can get the object back.
+A finished job is not proof you can get the object back.
 
 </details>
 
 <details>
 <summary>Recovery is the product</summary>
 
-A backup isn't a backup until you know you can recover from it.
+A backup is not a backup until you have restored from it.
 
 </details>
 
+| If you already have… | Use that |
+| --- | --- |
+| Files on disk and many storage backends | [rclone](https://rclone.org) |
+| Encrypted snapshots of a folder | [restic](https://restic.net) |
+| A one-shot Google zip | Takeout |
+| A vendor holding the backup | their product |
+| **An independent copy of SaaS data, on storage you control, that you can restore** | **Burrow** |
+
+rclone moves files you already possess. restic snapshots a tree you point it at. Burrow is the missing loop: **pull from the SaaS, land on your storage, prove you can get it back.**
+
+If Gmail is how the company runs, Gmail is a single point of failure. Burrow exists so that account is not the only copy.
+
 ---
 
-## Meet Burrow
+## How it works
 
 <p align="center">
-  <img src="docs/assets/ownership.svg" alt="Mail, docs, chat, and code copy into Burrow, then out to local, object, or NAS storage" />
+  <img src="docs/assets/burrow-meet.png" width="920" alt="Scattered sources flow into Burrow, then out to three kinds of storage you control" />
 </p>
 
 <p align="center"><strong>Burrow gives your data another home.</strong></p>
 
 <p align="center">
-  Local-first. Cloud-optional. Quietly in the background.<br/>
+  Local-first. Cloud-optional. Quiet in the background.<br/>
   Backup is the mechanism. Ownership and recovery are the point.
 </p>
-
----
-
-## Copy. Verify. Recover.
 
 <p align="center">
   <img src="docs/assets/loop.svg" alt="Connect, copy, verify, search, recover, export" />
@@ -92,7 +101,7 @@ A backup isn't a backup until you know you can recover from it.
 <details>
 <summary>CONNECT</summary>
 
-Link a source. Gmail is the first one we are building.
+Link a source. Gmail is the first loop we are building. Other names on this page are roadmap, not connectors.
 
 </details>
 
@@ -106,7 +115,7 @@ Ingest into a canonical archive, then onto storage you control.
 <details>
 <summary>VERIFY</summary>
 
-Checksums, completeness, consistency — not a green job icon.
+Checksums, completeness, consistency — not a green job icon. Verify is the operational test.
 
 </details>
 
@@ -131,17 +140,9 @@ Leave with the archive. Secrets stay out of the plaintext dump.
 
 </details>
 
----
-
-## Your storage. Your choice.
-
 <p align="center">
-  <img src="docs/assets/burrow-storage.png" alt="Mascot in front of three burrow openings — local, object storage, NAS" width="920" />
+  <img src="docs/assets/burrow-storage.png" width="920" alt="Mascot standing among three burrow openings — local, object storage, NAS" />
 </p>
-
-<p align="center"><strong>Bring your own storage. Keep it portable. Leave whenever you want.</strong></p>
-
-<p align="center">Burrow shouldn't become another lock-in.</p>
 
 ```text
 Typical path                         Burrow
@@ -151,33 +152,25 @@ SaaS → vendor → vendor storage       SaaS → Burrow → YOUR STORAGE
          dependency                                independent
 ```
 
----
+Bring your own storage. Keep it portable. Leave whenever you want. Burrow should not become the next lock-in.
+
+The first runtime is a **local process** on a machine you already have (laptop, Mini, NAS box). SQLite + disk. Docker, object storage, and a hosted cloud come after the Gmail loop actually restores a message. There is no compose file to copy yet.
 
 <p align="center">
-  <img src="docs/assets/features.svg" alt="Keep a copy, choose the home, know it's healthy, find it, get it back" />
-</p>
-
----
-
-## A green sync icon isn't enough
-
-<p align="center">
-  <img src="docs/assets/burrow-recovery.png" alt="Mascot emerging from the burrow carrying a data box" width="560" />
+  <img src="docs/assets/burrow-recovery.png" width="720" alt="Mascot bringing a recovered object from the burrow onto a device you control" />
 </p>
 
 <p align="center">
   <img src="docs/assets/verified.svg" alt="Synced, verified, recoverable" />
 </p>
 
-<p align="center"><strong>Recovery is the point.</strong></p>
-
-<p align="center">
-  Intact objects. Matching checksums. A restore you have actually done.
-</p>
+<p align="center"><strong>A green sync icon isn't enough. Recovery is the point.</strong></p>
 
 ---
 
 ## Under the burrow
+
+Same engine locally (SQLite + disk) or hosted (Postgres + queue). Placement changes. The archive does not.
 
 ```mermaid
 flowchart TD
@@ -191,49 +184,35 @@ flowchart TD
   X --> F[Search]
 ```
 
-Same engine locally (SQLite + disk) or hosted (Postgres + queue). Placement changes. The archive does not.
-
 Ingestion is at-least-once. Writes are idempotent. Push events are triggers, not truth.
 
 <details>
-<summary>Want to see what's underneath?</summary>
+<summary>Layout and stack</summary>
 
-Monorepo. Modular core. Several entry points — not microservices.
+One local process to start. Modular core. Not microservices.
 
 ```text
-apps/        web · api · agent · worker · cli
-packages/    domain · core · connectors · storage · state · queue
-             archive · recovery · search · crypto · observability
-             contracts · ui
+apps/        agent · web
+packages/    contracts · domain · core
+             state · storage · connectors
 ```
 
-`apps/` run Burrow. `packages/` *are* Burrow.
+`apps/` run Burrow. `packages/` *are* Burrow. Queue, search, archive, and recovery start inside `core` / `state` until they earn a boundary.
 
-Current implementation direction: TypeScript, Bun for local dev and the first local runtime, SQLite at home, Postgres when hosted, S3-compatible object storage. Choices — not the identity of the product.
+TypeScript and Bun for local dev and the first local runtime. SQLite at home, Postgres when hosted, S3-compatible object storage. Choices — not the identity of the product.
 
 </details>
 
-### Why it's built this way
+### What we optimize for
 
-| | |
-| --- | --- |
-| **Local-first** | The core does not assume the copy lives in our cloud. |
-| **Storage-agnostic** | Storage is an abstraction, not a vendor. |
-| **Runtime-independent** | Same engine locally or hosted. |
-| **Recoverability** | Restore is the acceptance test. |
-| **Reliability** | Checkpoints, reconcile, retries. Boring on purpose. |
+Named like [restic](https://github.com/restic/restic) and [Syncthing](https://github.com/syncthing/syncthing): order is the point.
 
----
-
-## Who it's for
-
-| Founder | Engineer | Self-hoster |
-| --- | --- | --- |
-| Don't let one SaaS account become a single point of failure. | A recovery engine around idempotency, verification, and portability. | Put the data where you want it. |
-
-| Security | Ops | Contributor |
-| --- | --- | --- |
-| Credentials, storage, and keys under your control. | Know what's protected before you need it. | Infrastructure for data independence. |
+1. **Recoverable** — Restore is the acceptance test. A finished copy job is not. The SLO is a message you have actually gotten back.
+2. **Yours** — The copy lives on storage you control. The core does not assume our cloud.
+3. **Honest** — Provider OAuth lives on the machine running Burrow. We are not a credential proxy. Export does not dump secrets in plaintext. Customer-held keys and encryption of the archive at rest are planned, not shipped.
+4. **Portable** — Leave with the archive. Storage is an abstraction, not a vendor.
+5. **Boring-reliable** — Checkpoints, reconcile, retries. At-least-once ingest, idempotent writes. Completeness is a report, not a dashboard we pretend exists.
+6. **Local-first** — A laptop or a NAS should be enough. Hosted is the same engine, moved.
 
 ---
 
@@ -245,32 +224,37 @@ Current implementation direction: TypeScript, Bun for local dev and the first lo
 
 <p align="center"><strong>Everything required to own and recover your data is open.</strong></p>
 
-<p align="center">
-  AGPLv3 for own / copy / verify / recover / export.<br/>
-  Cloud and enterprise for convenience and organizational scale — planned, not a catalog.
-</p>
+AGPLv3 for own / copy / verify / recover / export. Cloud and enterprise for convenience and organizational scale — planned, not a catalog.
 
 AGPL is copyleft, not “non-commercial,” and it does not forbid forks. **Burrow**, the logo, and the mascot are trademarks. Fork the code; don’t impersonate the burrow.
+
+The `LICENSE` file is not in the tree yet. Until it is, treat the intent as AGPLv3.
 
 ---
 
 ## Where we are
 
-The idea is sharp. The first recovery loop is **not shipped**.
-
 | Available | In progress | Planned |
 | --- | --- | --- |
 | This repo, the thesis, the architecture | Local runtime, Gmail + attachments, verify, search, restore, export, UI | S3 replica, more sources, customer-held keys, hosted cloud |
 
-Drive, Microsoft 365, Slack, GitHub, Notion are **roadmap names**, not connectors.
+Drive, Microsoft 365, Slack, GitHub, and Notion are **roadmap names**, not connectors.
+
+Intended first loop (not runnable):
+
+```text
+connect gmail → copy → verify → search → restore a message → export
+```
 
 ---
 
-## Get your burrow running
+## Develop
 
+<a id="develop"></a>
 <a id="get-your-burrow-running"></a>
+<a id="build-with-us"></a>
 
-Nothing production-ready to run yet. Toolchain is [mise](https://mise.jdx.dev); `make` is the command surface.
+Nothing production-ready to run. Toolchain is [mise](https://mise.jdx.dev); `make` is the command surface.
 
 ```bash
 # once: brew install mise
@@ -284,12 +268,6 @@ make doctor
 
 `make dev` waits until `apps/agent` and `apps/web` exist.
 
----
-
-## Build with us
-
-<a id="build-with-us"></a>
-
 Useful work: the Gmail loop, storage adapters, tests that fail when restore would fail.
 
 ```bash
@@ -297,10 +275,12 @@ make test
 make lint
 ```
 
-Open an issue before large design changes.
+Open an issue before large design changes. There is no `CONTRIBUTING.md` yet — the Gmail recovery loop is the contribution.
+
+If you find a security issue, do not file a public GitHub issue. There is no `security@` yet; open a private advisory on the repo when the remote exists, or wait until a contact is published.
 
 <p align="center">
-  <img src="logo.png" width="72" alt="" />
+  <img src="docs/assets/mascot.png" width="72" alt="" />
 </p>
 
 <p align="center"><strong>Burrow</strong><br/>Your SaaS data. Your copy.</p>
