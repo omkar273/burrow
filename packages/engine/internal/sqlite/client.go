@@ -60,3 +60,9 @@ func (c *Client) Ent() *generated.Client { return c.ent }
 func (c *Client) DB() *sql.DB { return c.db }
 
 func (c *Client) Close() error { return c.db.Close() }
+
+// MemoryDSN is a throwaway in-memory database, used to compute a migration
+// plan without creating a real archive.
+func MemoryDSN() string {
+	return "file:plan?mode=memory&cache=shared&_pragma=foreign_keys(ON)"
+}

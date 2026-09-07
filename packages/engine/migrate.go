@@ -2,6 +2,8 @@ package engine
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -14,22 +16,42 @@ import (
 	"github.com/omkar273/burrow/packages/engine/internal/validator"
 )
 
-// MigrationPlan returns the statements Migrate would run, without running
-// them. Empty means the archive already matches this build's schema.
+// MigrationPlan returns the SQL Migrate would run, without applying it
+// or creating the archive.
 //
-// The schema is a portability contract — another Burrow reconstructs an
-// archive from it — so an operator can read what will change before it
-// touches a database holding their mail.
+// A missing archive is planned against a throwaway in-memory database.
+// Creating the real one first made every fresh dry run emit the full schema.
 func MigrationPlan(ctx context.Context, cfg Config) (string, error) {
+	profile, err := resolveProfile(cfg)
+	if err != nil {
+		return "", err
+	}
+
+	if _, statErr := os.Stat(profile.StateDB); errors.Is(statErr, fs.ErrNotExist) {
+		scratch, err := sqlitedb.Open(sqlitedb.MemoryDSN())
+		if err != nil {
+			return "", err
+		}
+		defer scratch.Close() //nolint:errcheck
+		return scratch.PlanSQL(ctx)
+	}
+
 	return withMigrationDB(ctx, cfg, func(c *sqlitedb.Client) (string, error) {
 		return c.PlanSQL(ctx)
 	})
 }
 
-// SchemaVersion reports how many migrations this archive has applied. It is
-// stored in SQLite's user_version header, readable by any SQLite tool, and is
-// the version the portable archive bundle carries.
+// SchemaVersion reports the schema version this archive holds, or 0 when no
+// archive exists yet. It creates nothing: asking what version something is
+// must not bring it into being.
 func SchemaVersion(ctx context.Context, cfg Config) (int, error) {
+	profile, err := resolveProfile(cfg)
+	if err != nil {
+		return 0, err
+	}
+	if _, statErr := os.Stat(profile.StateDB); errors.Is(statErr, fs.ErrNotExist) {
+		return 0, nil
+	}
 	return withMigrationDB(ctx, cfg, func(c *sqlitedb.Client) (int, error) {
 		return c.Version(ctx)
 	})
@@ -51,20 +73,7 @@ func Migrate(ctx context.Context, cfg Config) error {
 func withMigrationDB[T any](ctx context.Context, cfg Config, fn func(*sqlitedb.Client) (T, error)) (T, error) {
 	var zero T
 
-	if err := validator.ValidateRequest(cfg); err != nil {
-		return zero, err
-	}
-
-	home := cfg.Home
-	if home == "" {
-		h, err := os.UserHomeDir()
-		if err != nil {
-			return zero, ierr.Wrap(err, "resolving home directory").Mark(ierr.ErrInternal)
-		}
-		home = h
-	}
-
-	profile, err := config.ResolveProfile(cfg.Profile, os.Getenv, home)
+	profile, err := resolveProfile(cfg)
 	if err != nil {
 		return zero, err
 	}
@@ -124,4 +133,21 @@ func SetSchemaVersionForTest(ctx context.Context, cfg Config, v int) error {
 		return struct{}{}, err
 	})
 	return err
+}
+
+// resolveProfile validates the config and resolves paths without creating
+// anything on disk.
+func resolveProfile(cfg Config) (config.Profile, error) {
+	if err := validator.ValidateRequest(cfg); err != nil {
+		return config.Profile{}, err
+	}
+	home := cfg.Home
+	if home == "" {
+		h, err := os.UserHomeDir()
+		if err != nil {
+			return config.Profile{}, ierr.Wrap(err, "resolving home directory").Mark(ierr.ErrInternal)
+		}
+		home = h
+	}
+	return config.ResolveProfile(cfg.Profile, os.Getenv, home)
 }

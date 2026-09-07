@@ -43,9 +43,18 @@ func run(args []string, out *os.File) error {
 			fmt.Fprintln(os.Stderr, "schema is up to date")
 			return nil
 		}
+		// Say which case this is: against an existing archive the plan is a
+		// delta, against no archive it is the whole schema. The SQL alone
+		// does not distinguish them.
+		version, err := engine.SchemaVersion(ctx, cfg)
+		switch {
+		case err != nil || version == 0:
+			fmt.Fprintln(os.Stderr, "no archive yet — this is the full schema, not a delta")
+		default:
+			fmt.Fprintf(os.Stderr, "delta against the existing archive (schema version %d)\n", version)
+		}
 		// Only the SQL goes to stdout, so `migrate --dry-run > out.sql`
-		// produces a file you can actually feed to sqlite3.
-		fmt.Fprintln(os.Stderr, "-- pending statements, not applied")
+		// produces a file you can feed straight to sqlite3.
 		fmt.Fprint(out, plan)
 		return nil
 	}
