@@ -3,7 +3,7 @@
 # nothing third-party. A documented rule that nothing checks is a wish.
 set -euo pipefail
 
-violations=$(go list -deps ./internal/domain/... \
+violations=$(go list -deps ./packages/engine/internal/domain/... \
   | grep -E '^[^/]+\.[^/]+/' \
   | grep -v '^github.com/omkar273/burrow/' \
   || true)

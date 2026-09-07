@@ -45,29 +45,29 @@ The handoff's §23 "V1 must have" list is six independent subsystems. It is deco
 ## 3. Layout
 
 ```text
-go.mod                          module github.com/omkar273/burrow
-cmd/burrowd/main.go             ~40 lines; composes fx modules
-ent/                            generated code (committed)
-ent/schema/                     schema definitions
-ent/schema/mixin/base.go        CreatedAt / UpdatedAt only
-migrations/versioned/           Atlas
-internal/
-  types/                        prefixed ULIDs, enums, filters
-  errors/                       sentinel taxonomy + builder
-  config/                       profile resolution, config.toml
-  domain/
-    object/   {model.go, repository.go}
-    blob/     {model.go, repository.go}
-    replica/  {model.go, repository.go}
-    source/   {model.go, port.go}       ← Source + Restorer
-    job/      {model.go, repository.go}
-  repository/ent/               implements domain interfaces; module.go
-  source/gmail/                 driven adapter
-  storage/    port.go + localfs/        driven adapter
-  service/                      use cases: pull · restore · verify
-  testutil/                     FakeSource, FakeStore, temp-file SQLite
-apps/web/                       TypeScript, unchanged workspace (M9)
+go.mod  go.sum                        the only Go files at the repo root
+apps/
+  agent/main.go                       thin consumer of the engine facade
+  web/                                TypeScript, unchanged workspace (M9)
+packages/engine/
+  engine.go                           the entire public surface
+  ent/  ent/schema/  ent/schema/mixin/
+  migrations/versioned/               Atlas
+  internal/                           unreachable from apps/ by the compiler
+    types/ errors/ config/ sqlited/
+    domain/{object,source,blob}/      models + interfaces, zero third-party imports
+    repository/ent/                   implements domain interfaces
+    storage/  storage/localfs/        driven adapter
+    source/gmail/                     driven adapter
+    service/                          use cases: pull · restore · verify
+    testutil/                         FakeSource, FakeStore, temp-file SQLite
+scripts/check-layers.sh               fails the build if domain/ imports third-party
 ```
+
+`packages/engine/internal/` is enforced by the compiler, not convention:
+`apps/agent` importing it is a build error. The facade in `engine.go` is
+therefore the real driving port, and the engine is embeddable — which
+matters for an AGPL core others may run in-process.
 
 ### Layer rules (never violate)
 
