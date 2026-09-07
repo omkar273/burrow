@@ -21,12 +21,13 @@ import (
 	entrepo "github.com/omkar273/burrow/packages/engine/internal/repository/ent"
 	"github.com/omkar273/burrow/packages/engine/internal/storage"
 	"github.com/omkar273/burrow/packages/engine/internal/storage/localfs"
+	"github.com/omkar273/burrow/packages/engine/internal/validator"
 )
 
 // Plain strings, so nothing from internal/ crosses the boundary.
 type Config struct {
 	// Empty means the BURROW_PROFILE environment variable, then "default".
-	Profile string
+	Profile string `validate:"omitempty,max=64,profilename"`
 	// Empty means os.UserHomeDir.
 	Home string
 }
@@ -51,6 +52,10 @@ type Engine struct {
 
 // The caller must Close the result.
 func Open(ctx context.Context, cfg Config) (*Engine, error) {
+	if err := validator.ValidateRequest(cfg); err != nil {
+		return nil, err
+	}
+
 	home := cfg.Home
 	if home == "" {
 		h, err := os.UserHomeDir()

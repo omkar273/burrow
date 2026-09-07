@@ -3,6 +3,8 @@ package ent
 import (
 	"context"
 
+	"github.com/samber/lo"
+
 	generated "github.com/omkar273/burrow/packages/engine/ent"
 	"github.com/omkar273/burrow/packages/engine/internal/domain/source"
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
@@ -54,9 +56,7 @@ func (r *sourceRepository) List(ctx context.Context) ([]source.Source, error) {
 	if err != nil {
 		return nil, ierr.Wrap(err, "listing sources").Mark(ierr.ErrInternal)
 	}
-	out := make([]source.Source, len(rows))
-	for i, row := range rows {
-		out[i] = sourceFromEnt(row)
-	}
-	return out, nil
+	return lo.Map(rows, func(row *generated.Source, _ int) source.Source {
+		return sourceFromEnt(row)
+	}), nil
 }

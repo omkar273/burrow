@@ -20,15 +20,34 @@ func (Object) Mixin() []ent.Mixin {
 
 func (Object) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").SchemaType(sqliteText).Immutable().Unique(),
-		field.String("source_id").SchemaType(sqliteText).Immutable().NotEmpty(),
-		field.String("kind").SchemaType(sqliteText).Immutable().NotEmpty(),
-		field.String("external_id").SchemaType(sqliteText).Immutable().NotEmpty(),
+		field.String("id").
+			SchemaType(sqliteText).
+			Immutable().
+			Unique(),
+
+		field.String("source_id").
+			SchemaType(sqliteText).
+			Immutable().
+			NotEmpty(),
+
+		field.String("kind").
+			SchemaType(sqliteText).
+			Immutable().
+			NotEmpty(),
+
+		field.String("external_id").
+			SchemaType(sqliteText).
+			Immutable().
+			NotEmpty(),
+
 		field.Time("first_seen_at"),
 		field.Time("last_seen_at"),
+
 		// Nillable: the provider no longer has this object. Emphatically
 		// not a deletion from the archive.
-		field.Time("deleted_at_source").Optional().Nillable(),
+		field.Time("deleted_at_source").
+			Optional().
+			Nillable(),
 	}
 }
 
