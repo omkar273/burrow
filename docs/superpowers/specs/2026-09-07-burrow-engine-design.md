@@ -234,12 +234,12 @@ therefore treat auth as pluggable from the start: app password for V1 because
 it needs no Cloud project, XOAUTH2 later for users who want scoped, revocable
 credentials. Choosing IMAP does not forfeit that.
 
-**Throughput is bandwidth-bound, not request-bound.** Gmail caps IMAP at
-2,500 MB/day down and 500 MB/day up. A mailbox of a few GB therefore takes days
-on first sync, and a large one is slower over IMAP than it would have been over
-the API, whose limit was request-shaped. Initial sync remains a resumable,
-multi-day background job; M2 must throttle on bytes transferred rather than on
-request count.
+**Throughput is latency-bound, not bandwidth-bound — measured 2026-09-08.** Gmail
+caps IMAP at 2,500 MB/day down and 500 MB/day up, but a real 19,033-message
+mailbox is only ~223 MB, or 9% of one day's allowance. The binding constraint is
+per-message round trips: a 12 KB fetch took 0.37 s, which is latency, not
+transfer. **M2 pipelines and batches FETCH rather than throttling on bytes.**
+Bandwidth only binds above roughly 2 GB of mail.
 
 ### Two Gmail connectors, not one
 
@@ -282,10 +282,27 @@ mode is identical: when `UIDVALIDITY` changes, every stored UID is meaningless
 and a full resync is required. That maps onto the existing typed
 `ErrCheckpointExpired` without changing the port.
 
-`CONDSTORE` (`HIGHESTMODSEQ`) would give cheaper incremental sync, but
-`imap.gmail.com` does not advertise it before authentication. Whether it
-appears post-login is an M0 question, not an assumption. `QRESYNC` is not
-offered at all.
+**Gmail offers neither `CONDSTORE` nor `QRESYNC`** — confirmed both before and
+after authentication on 2026-09-08. There is no MODSEQ-based "what changed since
+*n*" query.
+
+M3 therefore fetches UIDs above the stored `UIDNEXT` for additions, and detects
+label changes and deletions by reconciling over the UID range on a schedule.
+Reconciliation is mandatory rather than a safety net — which is what handoff §30
+argued for on principle, now forced by the protocol.
+
+`UIDPLUS` is not advertised, yet `APPEND` returns `[APPENDUID <validity> <uid>]`
+anyway. Restore uses it to learn the new UID directly, but as a best-effort
+optimisation with a fallback: an undeclared capability can be withdrawn without
+notice.
+
+### Verified end to end
+
+`FETCH BODY.PEEK[]` → sha256 → `APPEND` → `FETCH` returned **byte-identical**
+content against a real mailbox on 2026-09-08 (12,309 bytes, matching sha256).
+The acceptance criterion stands as written: byte equality, not a normalised
+comparison. `X-GM-MSGID`, `X-GM-THRID` and `X-GM-LABELS` all behave as
+documented. See the [M0 findings](../plans/2026-09-07-m0-findings.md).
 
 ### Restore is still not idempotent
 
