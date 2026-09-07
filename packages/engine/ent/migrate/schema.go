@@ -34,23 +34,31 @@ var (
 		{Name: "id", Type: field.TypeString, Unique: true, SchemaType: map[string]string{"sqlite3": "text"}},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "source_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
 		{Name: "kind", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
 		{Name: "external_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
 		{Name: "first_seen_at", Type: field.TypeTime},
 		{Name: "last_seen_at", Type: field.TypeTime},
 		{Name: "deleted_at_source", Type: field.TypeTime, Nullable: true},
+		{Name: "source_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
 	}
 	// ObjectsTable holds the schema information for the "objects" table.
 	ObjectsTable = &schema.Table{
 		Name:       "objects",
 		Columns:    ObjectsColumns,
 		PrimaryKey: []*schema.Column{ObjectsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "objects_sources_objects",
+				Columns:    []*schema.Column{ObjectsColumns[8]},
+				RefColumns: []*schema.Column{SourcesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "object_source_id_external_id",
 				Unique:  true,
-				Columns: []*schema.Column{ObjectsColumns[3], ObjectsColumns[5]},
+				Columns: []*schema.Column{ObjectsColumns[8], ObjectsColumns[4]},
 			},
 		},
 	}
@@ -59,20 +67,28 @@ var (
 		{Name: "id", Type: field.TypeString, Unique: true, SchemaType: map[string]string{"sqlite3": "text"}},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "object_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
 		{Name: "source_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
 		{Name: "external_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "object_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
 	}
 	// ObjectAliasTable holds the schema information for the "object_alias" table.
 	ObjectAliasTable = &schema.Table{
 		Name:       "object_alias",
 		Columns:    ObjectAliasColumns,
 		PrimaryKey: []*schema.Column{ObjectAliasColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "object_alias_objects_aliases",
+				Columns:    []*schema.Column{ObjectAliasColumns[5]},
+				RefColumns: []*schema.Column{ObjectsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "objectalias_source_id_external_id",
 				Unique:  true,
-				Columns: []*schema.Column{ObjectAliasColumns[4], ObjectAliasColumns[5]},
+				Columns: []*schema.Column{ObjectAliasColumns[3], ObjectAliasColumns[4]},
 			},
 		},
 	}
@@ -81,26 +97,40 @@ var (
 		{Name: "id", Type: field.TypeString, Unique: true, SchemaType: map[string]string{"sqlite3": "text"}},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "object_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
-		{Name: "blob_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
 		{Name: "restored_from_version_id", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"sqlite3": "text"}},
 		{Name: "captured_at", Type: field.TypeTime},
+		{Name: "blob_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "object_id", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
 	}
 	// ObjectVersionsTable holds the schema information for the "object_versions" table.
 	ObjectVersionsTable = &schema.Table{
 		Name:       "object_versions",
 		Columns:    ObjectVersionsColumns,
 		PrimaryKey: []*schema.Column{ObjectVersionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "object_versions_blobs_versions",
+				Columns:    []*schema.Column{ObjectVersionsColumns[5]},
+				RefColumns: []*schema.Column{BlobsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "object_versions_objects_versions",
+				Columns:    []*schema.Column{ObjectVersionsColumns[6]},
+				RefColumns: []*schema.Column{ObjectsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "objectversion_object_id_captured_at",
 				Unique:  false,
-				Columns: []*schema.Column{ObjectVersionsColumns[3], ObjectVersionsColumns[6]},
+				Columns: []*schema.Column{ObjectVersionsColumns[6], ObjectVersionsColumns[4]},
 			},
 			{
 				Name:    "objectversion_blob_id",
 				Unique:  false,
-				Columns: []*schema.Column{ObjectVersionsColumns[4]},
+				Columns: []*schema.Column{ObjectVersionsColumns[5]},
 			},
 		},
 	}
@@ -137,4 +167,8 @@ var (
 )
 
 func init() {
+	ObjectsTable.ForeignKeys[0].RefTable = SourcesTable
+	ObjectAliasTable.ForeignKeys[0].RefTable = ObjectsTable
+	ObjectVersionsTable.ForeignKeys[0].RefTable = BlobsTable
+	ObjectVersionsTable.ForeignKeys[1].RefTable = ObjectsTable
 }

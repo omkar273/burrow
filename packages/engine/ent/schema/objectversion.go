@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 
@@ -25,6 +26,23 @@ func (ObjectVersion) Fields() []ent.Field {
 		field.String("restored_from_version_id").SchemaType(sqliteText).
 			Optional().Nillable(),
 		field.Time("captured_at"),
+	}
+}
+
+func (ObjectVersion) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.From("object", Object.Type).
+			Ref("versions").
+			Field("object_id").
+			Unique().
+			Required().
+			Immutable(),
+		edge.From("blob", Blob.Type).
+			Ref("versions").
+			Field("blob_id").
+			Unique().
+			Required().
+			Immutable(),
 	}
 }
 

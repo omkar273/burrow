@@ -109,7 +109,21 @@ func (_u *ObjectVersionUpdate) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *ObjectVersionUpdate) check() error {
+	if _u.mutation.ObjectCleared() && len(_u.mutation.ObjectIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "ObjectVersion.object"`)
+	}
+	if _u.mutation.BlobCleared() && len(_u.mutation.BlobIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "ObjectVersion.blob"`)
+	}
+	return nil
+}
+
 func (_u *ObjectVersionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(objectversion.Table, objectversion.Columns, sqlgraph.NewFieldSpec(objectversion.FieldID, field.TypeString))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -244,7 +258,21 @@ func (_u *ObjectVersionUpdateOne) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *ObjectVersionUpdateOne) check() error {
+	if _u.mutation.ObjectCleared() && len(_u.mutation.ObjectIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "ObjectVersion.object"`)
+	}
+	if _u.mutation.BlobCleared() && len(_u.mutation.BlobIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "ObjectVersion.blob"`)
+	}
+	return nil
+}
+
 func (_u *ObjectVersionUpdateOne) sqlSave(ctx context.Context) (_node *ObjectVersion, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(objectversion.Table, objectversion.Columns, sqlgraph.NewFieldSpec(objectversion.FieldID, field.TypeString))
 	id, ok := _u.mutation.ID()
 	if !ok {

@@ -30,11 +30,13 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	defer e.Close()
 
 	p := e.Paths()
 	fmt.Printf("profile   %s\n", p.Profile)
 	fmt.Printf("state     %s\n", p.StateDB)
 	fmt.Printf("objects   %s\n", p.ObjectDir)
-	return nil
+
+	// Close releases the profile lock; a failure there matters even though
+	// the output above already succeeded.
+	return e.Close()
 }

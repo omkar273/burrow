@@ -144,12 +144,51 @@ func TestCurrentVersionReturnsTheLatest(t *testing.T) {
 	}
 }
 
-// Lets ingest attach restored content as an alias instead of forking.
-func TestOwnerOfBlobFindsTheObject(t *testing.T) {
+// objects and object_alias each have their own unique index on
+// (source_id, external_id), so nothing at the schema level stops the same
+// provider identity existing in both. GetByExternalID checks objects first,
+// so an alias shadowed that way would silently resolve to the wrong object.
+func TestAliasCannotShadowAnExistingObjectIdentity(t *testing.T) {
 	ctx := context.Background()
 	c := openTestClient(t)
 	srcID := newSourceForTest(t, c)
 	repo := entrepo.NewObjectRepository(c)
+
+	first := &object.Object{
+		ID: types.NewID(types.PrefixObject), SourceID: srcID,
+		Kind: object.KindMessage, ExternalID: "m1",
+	}
+	second := &object.Object{
+		ID: types.NewID(types.PrefixObject), SourceID: srcID,
+		Kind: object.KindMessage, ExternalID: "m2",
+	}
+	for _, o := range []*object.Object{first, second} {
+		if err := repo.Create(ctx, o); err != nil {
+			t.Fatalf("create %s: %v", o.ExternalID, err)
+		}
+	}
+
+	// Aliasing m2 onto the first object would make "m2" resolve to whichever
+	// table is consulted first.
+	if err := repo.AddAlias(ctx, first.ID, srcID, "m2"); err == nil {
+		t.Fatal("alias was allowed to shadow an existing object identity")
+	}
+}
+
+// The foreign_keys pragma is inert without REFERENCES clauses, so this
+// asserts the constraints exist rather than that the pragma is set.
+func TestDanglingReferencesAreRejected(t *testing.T) {
+	ctx := context.Background()
+	c := openTestClient(t)
+	srcID := newSourceForTest(t, c)
+	repo := entrepo.NewObjectRepository(c)
+
+	if err := repo.Create(ctx, &object.Object{
+		ID: types.NewID(types.PrefixObject), SourceID: "src_does_not_exist",
+		Kind: object.KindMessage, ExternalID: "m1",
+	}); err == nil {
+		t.Fatal("object accepted a source_id with no matching source")
+	}
 
 	obj := &object.Object{
 		ID: types.NewID(types.PrefixObject), SourceID: srcID,
@@ -158,18 +197,15 @@ func TestOwnerOfBlobFindsTheObject(t *testing.T) {
 	if err := repo.Create(ctx, obj); err != nil {
 		t.Fatalf("create: %v", err)
 	}
-	blobID := mustCreateBlob(t, c, "sha256:dddd", 3)
+
 	if err := repo.CreateVersion(ctx, &object.Version{
-		ID: types.NewID(types.PrefixVersion), ObjectID: obj.ID, BlobID: blobID,
-	}); err != nil {
-		t.Fatalf("create version: %v", err)
+		ID: types.NewID(types.PrefixVersion), ObjectID: obj.ID,
+		BlobID: "blob_does_not_exist",
+	}); err == nil {
+		t.Fatal("version accepted a blob_id with no matching blob")
 	}
 
-	owner, err := repo.OwnerOfBlob(ctx, blobID)
-	if err != nil {
-		t.Fatalf("OwnerOfBlob: %v", err)
-	}
-	if owner.ID != obj.ID {
-		t.Fatalf("OwnerOfBlob = %q, want %q", owner.ID, obj.ID)
+	if err := repo.AddAlias(ctx, "obj_does_not_exist", srcID, "m2"); err == nil {
+		t.Fatal("alias accepted an object_id with no matching object")
 	}
 }

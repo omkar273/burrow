@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/omkar273/burrow/packages/engine/ent/object"
 	"github.com/omkar273/burrow/packages/engine/ent/source"
 )
 
@@ -70,6 +71,21 @@ func (_c *SourceCreate) SetStatus(v string) *SourceCreate {
 func (_c *SourceCreate) SetID(v string) *SourceCreate {
 	_c.mutation.SetID(v)
 	return _c
+}
+
+// AddObjectIDs adds the "objects" edge to the Object entity by IDs.
+func (_c *SourceCreate) AddObjectIDs(ids ...string) *SourceCreate {
+	_c.mutation.AddObjectIDs(ids...)
+	return _c
+}
+
+// AddObjects adds the "objects" edges to the Object entity.
+func (_c *SourceCreate) AddObjects(v ...*Object) *SourceCreate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddObjectIDs(ids...)
 }
 
 // Mutation returns the SourceMutation object of the builder.
@@ -203,6 +219,22 @@ func (_c *SourceCreate) createSpec() (*Source, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(source.FieldStatus, field.TypeString, value)
 		_node.Status = value
+	}
+	if nodes := _c.mutation.ObjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   source.ObjectsTable,
+			Columns: []string{source.ObjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(object.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

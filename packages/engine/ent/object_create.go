@@ -11,6 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/omkar273/burrow/packages/engine/ent/object"
+	"github.com/omkar273/burrow/packages/engine/ent/objectalias"
+	"github.com/omkar273/burrow/packages/engine/ent/objectversion"
+	"github.com/omkar273/burrow/packages/engine/ent/source"
 )
 
 // ObjectCreate is the builder for creating a Object entity.
@@ -98,6 +101,41 @@ func (_c *ObjectCreate) SetID(v string) *ObjectCreate {
 	return _c
 }
 
+// SetSource sets the "source" edge to the Source entity.
+func (_c *ObjectCreate) SetSource(v *Source) *ObjectCreate {
+	return _c.SetSourceID(v.ID)
+}
+
+// AddAliasIDs adds the "aliases" edge to the ObjectAlias entity by IDs.
+func (_c *ObjectCreate) AddAliasIDs(ids ...string) *ObjectCreate {
+	_c.mutation.AddAliasIDs(ids...)
+	return _c
+}
+
+// AddAliases adds the "aliases" edges to the ObjectAlias entity.
+func (_c *ObjectCreate) AddAliases(v ...*ObjectAlias) *ObjectCreate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAliasIDs(ids...)
+}
+
+// AddVersionIDs adds the "versions" edge to the ObjectVersion entity by IDs.
+func (_c *ObjectCreate) AddVersionIDs(ids ...string) *ObjectCreate {
+	_c.mutation.AddVersionIDs(ids...)
+	return _c
+}
+
+// AddVersions adds the "versions" edges to the ObjectVersion entity.
+func (_c *ObjectCreate) AddVersions(v ...*ObjectVersion) *ObjectCreate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddVersionIDs(ids...)
+}
+
 // Mutation returns the ObjectMutation object of the builder.
 func (_c *ObjectCreate) Mutation() *ObjectMutation {
 	return _c.mutation
@@ -181,6 +219,9 @@ func (_c *ObjectCreate) check() error {
 	if _, ok := _c.mutation.LastSeenAt(); !ok {
 		return &ValidationError{Name: "last_seen_at", err: errors.New(`ent: missing required field "Object.last_seen_at"`)}
 	}
+	if len(_c.mutation.SourceIDs()) == 0 {
+		return &ValidationError{Name: "source", err: errors.New(`ent: missing required edge "Object.source"`)}
+	}
 	return nil
 }
 
@@ -224,10 +265,6 @@ func (_c *ObjectCreate) createSpec() (*Object, *sqlgraph.CreateSpec) {
 		_spec.SetField(object.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := _c.mutation.SourceID(); ok {
-		_spec.SetField(object.FieldSourceID, field.TypeString, value)
-		_node.SourceID = value
-	}
 	if value, ok := _c.mutation.Kind(); ok {
 		_spec.SetField(object.FieldKind, field.TypeString, value)
 		_node.Kind = value
@@ -247,6 +284,55 @@ func (_c *ObjectCreate) createSpec() (*Object, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.DeletedAtSource(); ok {
 		_spec.SetField(object.FieldDeletedAtSource, field.TypeTime, value)
 		_node.DeletedAtSource = &value
+	}
+	if nodes := _c.mutation.SourceIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   object.SourceTable,
+			Columns: []string{object.SourceColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(source.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.SourceID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AliasesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   object.AliasesTable,
+			Columns: []string{object.AliasesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(objectalias.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.VersionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   object.VersionsTable,
+			Columns: []string{object.VersionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(objectversion.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

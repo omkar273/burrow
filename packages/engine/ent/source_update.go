@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/omkar273/burrow/packages/engine/ent/object"
 	"github.com/omkar273/burrow/packages/engine/ent/predicate"
 	"github.com/omkar273/burrow/packages/engine/ent/source"
 )
@@ -62,9 +63,45 @@ func (_u *SourceUpdate) SetNillableStatus(v *string) *SourceUpdate {
 	return _u
 }
 
+// AddObjectIDs adds the "objects" edge to the Object entity by IDs.
+func (_u *SourceUpdate) AddObjectIDs(ids ...string) *SourceUpdate {
+	_u.mutation.AddObjectIDs(ids...)
+	return _u
+}
+
+// AddObjects adds the "objects" edges to the Object entity.
+func (_u *SourceUpdate) AddObjects(v ...*Object) *SourceUpdate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddObjectIDs(ids...)
+}
+
 // Mutation returns the SourceMutation object of the builder.
 func (_u *SourceUpdate) Mutation() *SourceMutation {
 	return _u.mutation
+}
+
+// ClearObjects clears all "objects" edges to the Object entity.
+func (_u *SourceUpdate) ClearObjects() *SourceUpdate {
+	_u.mutation.ClearObjects()
+	return _u
+}
+
+// RemoveObjectIDs removes the "objects" edge to Object entities by IDs.
+func (_u *SourceUpdate) RemoveObjectIDs(ids ...string) *SourceUpdate {
+	_u.mutation.RemoveObjectIDs(ids...)
+	return _u
+}
+
+// RemoveObjects removes "objects" edges to Object entities.
+func (_u *SourceUpdate) RemoveObjects(v ...*Object) *SourceUpdate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveObjectIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -139,6 +176,51 @@ func (_u *SourceUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(source.FieldStatus, field.TypeString, value)
 	}
+	if _u.mutation.ObjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   source.ObjectsTable,
+			Columns: []string{source.ObjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(object.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedObjectsIDs(); len(nodes) > 0 && !_u.mutation.ObjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   source.ObjectsTable,
+			Columns: []string{source.ObjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(object.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ObjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   source.ObjectsTable,
+			Columns: []string{source.ObjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(object.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{source.Label}
@@ -193,9 +275,45 @@ func (_u *SourceUpdateOne) SetNillableStatus(v *string) *SourceUpdateOne {
 	return _u
 }
 
+// AddObjectIDs adds the "objects" edge to the Object entity by IDs.
+func (_u *SourceUpdateOne) AddObjectIDs(ids ...string) *SourceUpdateOne {
+	_u.mutation.AddObjectIDs(ids...)
+	return _u
+}
+
+// AddObjects adds the "objects" edges to the Object entity.
+func (_u *SourceUpdateOne) AddObjects(v ...*Object) *SourceUpdateOne {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddObjectIDs(ids...)
+}
+
 // Mutation returns the SourceMutation object of the builder.
 func (_u *SourceUpdateOne) Mutation() *SourceMutation {
 	return _u.mutation
+}
+
+// ClearObjects clears all "objects" edges to the Object entity.
+func (_u *SourceUpdateOne) ClearObjects() *SourceUpdateOne {
+	_u.mutation.ClearObjects()
+	return _u
+}
+
+// RemoveObjectIDs removes the "objects" edge to Object entities by IDs.
+func (_u *SourceUpdateOne) RemoveObjectIDs(ids ...string) *SourceUpdateOne {
+	_u.mutation.RemoveObjectIDs(ids...)
+	return _u
+}
+
+// RemoveObjects removes "objects" edges to Object entities.
+func (_u *SourceUpdateOne) RemoveObjects(v ...*Object) *SourceUpdateOne {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveObjectIDs(ids...)
 }
 
 // Where appends a list predicates to the SourceUpdate builder.
@@ -299,6 +417,51 @@ func (_u *SourceUpdateOne) sqlSave(ctx context.Context) (_node *Source, err erro
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(source.FieldStatus, field.TypeString, value)
+	}
+	if _u.mutation.ObjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   source.ObjectsTable,
+			Columns: []string{source.ObjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(object.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedObjectsIDs(); len(nodes) > 0 && !_u.mutation.ObjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   source.ObjectsTable,
+			Columns: []string{source.ObjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(object.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ObjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   source.ObjectsTable,
+			Columns: []string{source.ObjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(object.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Source{config: _u.config}
 	_spec.Assign = _node.assignValues

@@ -26,8 +26,29 @@ type Source struct {
 	// AccountEmail holds the value of the "account_email" field.
 	AccountEmail string `json:"account_email,omitempty"`
 	// Status holds the value of the "status" field.
-	Status       string `json:"status,omitempty"`
+	Status string `json:"status,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the SourceQuery when eager-loading is set.
+	Edges        SourceEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// SourceEdges holds the relations/edges for other nodes in the graph.
+type SourceEdges struct {
+	// Objects holds the value of the objects edge.
+	Objects []*Object `json:"objects,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// ObjectsOrErr returns the Objects value or an error if the edge
+// was not loaded in eager-loading.
+func (e SourceEdges) ObjectsOrErr() ([]*Object, error) {
+	if e.loadedTypes[0] {
+		return e.Objects, nil
+	}
+	return nil, &NotLoadedError{edge: "objects"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -101,6 +122,11 @@ func (_m *Source) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Source) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryObjects queries the "objects" edge of the Source entity.
+func (_m *Source) QueryObjects() *ObjectQuery {
+	return NewSourceClient(_m.config).QueryObjects(_m)
 }
 
 // Update returns a builder for updating this Source.

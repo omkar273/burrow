@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/omkar273/burrow/packages/engine/ent/predicate"
 )
 
@@ -362,6 +363,29 @@ func ExternalIDEqualFold(v string) predicate.ObjectAlias {
 // ExternalIDContainsFold applies the ContainsFold predicate on the "external_id" field.
 func ExternalIDContainsFold(v string) predicate.ObjectAlias {
 	return predicate.ObjectAlias(sql.FieldContainsFold(FieldExternalID, v))
+}
+
+// HasObject applies the HasEdge predicate on the "object" edge.
+func HasObject() predicate.ObjectAlias {
+	return predicate.ObjectAlias(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, ObjectTable, ObjectColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasObjectWith applies the HasEdge predicate on the "object" edge with a given conditions (other predicates).
+func HasObjectWith(preds ...predicate.Object) predicate.ObjectAlias {
+	return predicate.ObjectAlias(func(s *sql.Selector) {
+		step := newObjectStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

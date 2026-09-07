@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/omkar273/burrow/packages/engine/ent/object"
+	"github.com/omkar273/burrow/packages/engine/ent/source"
 )
 
 // Object is the model entity for the Object schema.
@@ -33,7 +34,52 @@ type Object struct {
 	LastSeenAt time.Time `json:"last_seen_at,omitempty"`
 	// DeletedAtSource holds the value of the "deleted_at_source" field.
 	DeletedAtSource *time.Time `json:"deleted_at_source,omitempty"`
-	selectValues    sql.SelectValues
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the ObjectQuery when eager-loading is set.
+	Edges        ObjectEdges `json:"edges"`
+	selectValues sql.SelectValues
+}
+
+// ObjectEdges holds the relations/edges for other nodes in the graph.
+type ObjectEdges struct {
+	// Source holds the value of the source edge.
+	Source *Source `json:"source,omitempty"`
+	// Aliases holds the value of the aliases edge.
+	Aliases []*ObjectAlias `json:"aliases,omitempty"`
+	// Versions holds the value of the versions edge.
+	Versions []*ObjectVersion `json:"versions,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [3]bool
+}
+
+// SourceOrErr returns the Source value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ObjectEdges) SourceOrErr() (*Source, error) {
+	if e.Source != nil {
+		return e.Source, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: source.Label}
+	}
+	return nil, &NotLoadedError{edge: "source"}
+}
+
+// AliasesOrErr returns the Aliases value or an error if the edge
+// was not loaded in eager-loading.
+func (e ObjectEdges) AliasesOrErr() ([]*ObjectAlias, error) {
+	if e.loadedTypes[1] {
+		return e.Aliases, nil
+	}
+	return nil, &NotLoadedError{edge: "aliases"}
+}
+
+// VersionsOrErr returns the Versions value or an error if the edge
+// was not loaded in eager-loading.
+func (e ObjectEdges) VersionsOrErr() ([]*ObjectVersion, error) {
+	if e.loadedTypes[2] {
+		return e.Versions, nil
+	}
+	return nil, &NotLoadedError{edge: "versions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -126,6 +172,21 @@ func (_m *Object) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Object) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QuerySource queries the "source" edge of the Object entity.
+func (_m *Object) QuerySource() *SourceQuery {
+	return NewObjectClient(_m.config).QuerySource(_m)
+}
+
+// QueryAliases queries the "aliases" edge of the Object entity.
+func (_m *Object) QueryAliases() *ObjectAliasQuery {
+	return NewObjectClient(_m.config).QueryAliases(_m)
+}
+
+// QueryVersions queries the "versions" edge of the Object entity.
+func (_m *Object) QueryVersions() *ObjectVersionQuery {
+	return NewObjectClient(_m.config).QueryVersions(_m)
 }
 
 // Update returns a builder for updating this Object.

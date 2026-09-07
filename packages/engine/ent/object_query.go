@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -12,16 +13,22 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/omkar273/burrow/packages/engine/ent/object"
+	"github.com/omkar273/burrow/packages/engine/ent/objectalias"
+	"github.com/omkar273/burrow/packages/engine/ent/objectversion"
 	"github.com/omkar273/burrow/packages/engine/ent/predicate"
+	"github.com/omkar273/burrow/packages/engine/ent/source"
 )
 
 // ObjectQuery is the builder for querying Object entities.
 type ObjectQuery struct {
 	config
-	ctx        *QueryContext
-	order      []object.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Object
+	ctx          *QueryContext
+	order        []object.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.Object
+	withSource   *SourceQuery
+	withAliases  *ObjectAliasQuery
+	withVersions *ObjectVersionQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -56,6 +63,72 @@ func (_q *ObjectQuery) Unique(unique bool) *ObjectQuery {
 func (_q *ObjectQuery) Order(o ...object.OrderOption) *ObjectQuery {
 	_q.order = append(_q.order, o...)
 	return _q
+}
+
+// QuerySource chains the current query on the "source" edge.
+func (_q *ObjectQuery) QuerySource() *SourceQuery {
+	query := (&SourceClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(object.Table, object.FieldID, selector),
+			sqlgraph.To(source.Table, source.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, object.SourceTable, object.SourceColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAliases chains the current query on the "aliases" edge.
+func (_q *ObjectQuery) QueryAliases() *ObjectAliasQuery {
+	query := (&ObjectAliasClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(object.Table, object.FieldID, selector),
+			sqlgraph.To(objectalias.Table, objectalias.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, object.AliasesTable, object.AliasesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryVersions chains the current query on the "versions" edge.
+func (_q *ObjectQuery) QueryVersions() *ObjectVersionQuery {
+	query := (&ObjectVersionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(object.Table, object.FieldID, selector),
+			sqlgraph.To(objectversion.Table, objectversion.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, object.VersionsTable, object.VersionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Object entity from the query.
@@ -245,15 +318,51 @@ func (_q *ObjectQuery) Clone() *ObjectQuery {
 		return nil
 	}
 	return &ObjectQuery{
-		config:     _q.config,
-		ctx:        _q.ctx.Clone(),
-		order:      append([]object.OrderOption{}, _q.order...),
-		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.Object{}, _q.predicates...),
+		config:       _q.config,
+		ctx:          _q.ctx.Clone(),
+		order:        append([]object.OrderOption{}, _q.order...),
+		inters:       append([]Interceptor{}, _q.inters...),
+		predicates:   append([]predicate.Object{}, _q.predicates...),
+		withSource:   _q.withSource.Clone(),
+		withAliases:  _q.withAliases.Clone(),
+		withVersions: _q.withVersions.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithSource tells the query-builder to eager-load the nodes that are connected to
+// the "source" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ObjectQuery) WithSource(opts ...func(*SourceQuery)) *ObjectQuery {
+	query := (&SourceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withSource = query
+	return _q
+}
+
+// WithAliases tells the query-builder to eager-load the nodes that are connected to
+// the "aliases" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ObjectQuery) WithAliases(opts ...func(*ObjectAliasQuery)) *ObjectQuery {
+	query := (&ObjectAliasClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAliases = query
+	return _q
+}
+
+// WithVersions tells the query-builder to eager-load the nodes that are connected to
+// the "versions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ObjectQuery) WithVersions(opts ...func(*ObjectVersionQuery)) *ObjectQuery {
+	query := (&ObjectVersionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withVersions = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -332,8 +441,13 @@ func (_q *ObjectQuery) prepareQuery(ctx context.Context) error {
 
 func (_q *ObjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Object, error) {
 	var (
-		nodes = []*Object{}
-		_spec = _q.querySpec()
+		nodes       = []*Object{}
+		_spec       = _q.querySpec()
+		loadedTypes = [3]bool{
+			_q.withSource != nil,
+			_q.withAliases != nil,
+			_q.withVersions != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Object).scanValues(nil, columns)
@@ -341,6 +455,7 @@ func (_q *ObjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Objec
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &Object{config: _q.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -352,7 +467,117 @@ func (_q *ObjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Objec
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withSource; query != nil {
+		if err := _q.loadSource(ctx, query, nodes, nil,
+			func(n *Object, e *Source) { n.Edges.Source = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withAliases; query != nil {
+		if err := _q.loadAliases(ctx, query, nodes,
+			func(n *Object) { n.Edges.Aliases = []*ObjectAlias{} },
+			func(n *Object, e *ObjectAlias) { n.Edges.Aliases = append(n.Edges.Aliases, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withVersions; query != nil {
+		if err := _q.loadVersions(ctx, query, nodes,
+			func(n *Object) { n.Edges.Versions = []*ObjectVersion{} },
+			func(n *Object, e *ObjectVersion) { n.Edges.Versions = append(n.Edges.Versions, e) }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (_q *ObjectQuery) loadSource(ctx context.Context, query *SourceQuery, nodes []*Object, init func(*Object), assign func(*Object, *Source)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*Object)
+	for i := range nodes {
+		fk := nodes[i].SourceID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(source.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "source_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *ObjectQuery) loadAliases(ctx context.Context, query *ObjectAliasQuery, nodes []*Object, init func(*Object), assign func(*Object, *ObjectAlias)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Object)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(objectalias.FieldObjectID)
+	}
+	query.Where(predicate.ObjectAlias(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(object.AliasesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ObjectID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "object_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *ObjectQuery) loadVersions(ctx context.Context, query *ObjectVersionQuery, nodes []*Object, init func(*Object), assign func(*Object, *ObjectVersion)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Object)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(objectversion.FieldObjectID)
+	}
+	query.Where(predicate.ObjectVersion(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(object.VersionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ObjectID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "object_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (_q *ObjectQuery) sqlCount(ctx context.Context) (int, error) {
@@ -379,6 +604,9 @@ func (_q *ObjectQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != object.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if _q.withSource != nil {
+			_spec.Node.AddColumnOnce(object.FieldSourceID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

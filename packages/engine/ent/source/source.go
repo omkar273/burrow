@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -23,8 +24,17 @@ const (
 	FieldAccountEmail = "account_email"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// EdgeObjects holds the string denoting the objects edge name in mutations.
+	EdgeObjects = "objects"
 	// Table holds the table name of the source in the database.
 	Table = "sources"
+	// ObjectsTable is the table that holds the objects relation/edge.
+	ObjectsTable = "objects"
+	// ObjectsInverseTable is the table name for the Object entity.
+	// It exists in this package in order to avoid circular dependency with the "object" package.
+	ObjectsInverseTable = "objects"
+	// ObjectsColumn is the table column denoting the objects relation/edge.
+	ObjectsColumn = "source_id"
 )
 
 // Columns holds all SQL columns for source fields.
@@ -93,4 +103,25 @@ func ByAccountEmail(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByObjectsCount orders the results by objects count.
+func ByObjectsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newObjectsStep(), opts...)
+	}
+}
+
+// ByObjects orders the results by objects terms.
+func ByObjects(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newObjectsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newObjectsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ObjectsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ObjectsTable, ObjectsColumn),
+	)
 }

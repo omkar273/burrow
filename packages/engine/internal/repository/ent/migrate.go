@@ -37,44 +37,55 @@ func applyVersioned(ctx context.Context, db *sql.DB) error {
 	sort.Strings(entries)
 
 	for _, name := range entries {
-		var seen int
-		if err := db.QueryRowContext(ctx,
-			`SELECT COUNT(1) FROM schema_version WHERE filename = ?`, name,
-		).Scan(&seen); err != nil {
-			return ierr.Wrap(err, "checking migration "+name).Mark(ierr.ErrInternal)
-		}
-		if seen > 0 {
-			continue
-		}
-
 		body, err := migrationFS.ReadFile(name)
 		if err != nil {
 			return ierr.Wrap(err, "reading migration "+name).Mark(ierr.ErrInternal)
 		}
+		if err := applyOne(ctx, db, name, string(body)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-		tx, err := db.BeginTx(ctx, nil)
-		if err != nil {
-			return ierr.Wrap(err, "beginning migration "+name).Mark(ierr.ErrInternal)
+// applyOne claims a migration by inserting its bookkeeping row first, inside
+// the same transaction that runs it.
+//
+// Checking schema_version before opening the transaction would let two
+// processes both observe the migration as unapplied; the loser then runs a
+// non-idempotent CREATE TABLE and fails. INSERT OR IGNORE makes the claim and
+// the check one atomic step, and a rollback releases it.
+func applyOne(ctx context.Context, db *sql.DB, name, body string) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return ierr.Wrap(err, "beginning migration "+name).Mark(ierr.ErrInternal)
+	}
+	defer tx.Rollback() //nolint:errcheck // no-op once committed
+
+	res, err := tx.ExecContext(ctx,
+		`INSERT OR IGNORE INTO schema_version (filename, applied_at) VALUES (?, datetime('now'))`,
+		name)
+	if err != nil {
+		return ierr.Wrap(err, "claiming migration "+name).Mark(ierr.ErrInternal)
+	}
+	claimed, err := res.RowsAffected()
+	if err != nil {
+		return ierr.Wrap(err, "claiming migration "+name).Mark(ierr.ErrInternal)
+	}
+	if claimed == 0 {
+		return nil // already applied
+	}
+
+	for _, stmt := range strings.Split(body, ";") {
+		if strings.TrimSpace(stmt) == "" {
+			continue
 		}
-		for _, stmt := range strings.Split(string(body), ";") {
-			if strings.TrimSpace(stmt) == "" {
-				continue
-			}
-			if _, err := tx.ExecContext(ctx, stmt); err != nil {
-				_ = tx.Rollback()
-				return ierr.Wrap(err, "applying migration "+name).Mark(ierr.ErrInternal)
-			}
+		if _, err := tx.ExecContext(ctx, stmt); err != nil {
+			return ierr.Wrap(err, "applying migration "+name).Mark(ierr.ErrInternal)
 		}
-		if _, err := tx.ExecContext(ctx,
-			`INSERT INTO schema_version (filename, applied_at) VALUES (?, datetime('now'))`,
-			name,
-		); err != nil {
-			_ = tx.Rollback()
-			return ierr.Wrap(err, "recording migration "+name).Mark(ierr.ErrInternal)
-		}
-		if err := tx.Commit(); err != nil {
-			return ierr.Wrap(err, "committing migration "+name).Mark(ierr.ErrInternal)
-		}
+	}
+	if err := tx.Commit(); err != nil {
+		return ierr.Wrap(err, "committing migration "+name).Mark(ierr.ErrInternal)
 	}
 	return nil
 }

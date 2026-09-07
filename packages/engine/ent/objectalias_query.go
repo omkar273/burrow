@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/omkar273/burrow/packages/engine/ent/object"
 	"github.com/omkar273/burrow/packages/engine/ent/objectalias"
 	"github.com/omkar273/burrow/packages/engine/ent/predicate"
 )
@@ -22,6 +23,7 @@ type ObjectAliasQuery struct {
 	order      []objectalias.OrderOption
 	inters     []Interceptor
 	predicates []predicate.ObjectAlias
+	withObject *ObjectQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -56,6 +58,28 @@ func (_q *ObjectAliasQuery) Unique(unique bool) *ObjectAliasQuery {
 func (_q *ObjectAliasQuery) Order(o ...objectalias.OrderOption) *ObjectAliasQuery {
 	_q.order = append(_q.order, o...)
 	return _q
+}
+
+// QueryObject chains the current query on the "object" edge.
+func (_q *ObjectAliasQuery) QueryObject() *ObjectQuery {
+	query := (&ObjectClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(objectalias.Table, objectalias.FieldID, selector),
+			sqlgraph.To(object.Table, object.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, objectalias.ObjectTable, objectalias.ObjectColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first ObjectAlias entity from the query.
@@ -250,10 +274,22 @@ func (_q *ObjectAliasQuery) Clone() *ObjectAliasQuery {
 		order:      append([]objectalias.OrderOption{}, _q.order...),
 		inters:     append([]Interceptor{}, _q.inters...),
 		predicates: append([]predicate.ObjectAlias{}, _q.predicates...),
+		withObject: _q.withObject.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithObject tells the query-builder to eager-load the nodes that are connected to
+// the "object" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ObjectAliasQuery) WithObject(opts ...func(*ObjectQuery)) *ObjectAliasQuery {
+	query := (&ObjectClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withObject = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -332,8 +368,11 @@ func (_q *ObjectAliasQuery) prepareQuery(ctx context.Context) error {
 
 func (_q *ObjectAliasQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ObjectAlias, error) {
 	var (
-		nodes = []*ObjectAlias{}
-		_spec = _q.querySpec()
+		nodes       = []*ObjectAlias{}
+		_spec       = _q.querySpec()
+		loadedTypes = [1]bool{
+			_q.withObject != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*ObjectAlias).scanValues(nil, columns)
@@ -341,6 +380,7 @@ func (_q *ObjectAliasQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &ObjectAlias{config: _q.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -352,7 +392,43 @@ func (_q *ObjectAliasQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withObject; query != nil {
+		if err := _q.loadObject(ctx, query, nodes, nil,
+			func(n *ObjectAlias, e *Object) { n.Edges.Object = e }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (_q *ObjectAliasQuery) loadObject(ctx context.Context, query *ObjectQuery, nodes []*ObjectAlias, init func(*ObjectAlias), assign func(*ObjectAlias, *Object)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*ObjectAlias)
+	for i := range nodes {
+		fk := nodes[i].ObjectID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(object.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "object_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
 }
 
 func (_q *ObjectAliasQuery) sqlCount(ctx context.Context) (int, error) {
@@ -379,6 +455,9 @@ func (_q *ObjectAliasQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != objectalias.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if _q.withObject != nil {
+			_spec.Node.AddColumnOnce(objectalias.FieldObjectID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

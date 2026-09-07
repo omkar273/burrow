@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/omkar273/burrow/packages/engine/ent/object"
 	"github.com/omkar273/burrow/packages/engine/ent/objectalias"
 )
 
@@ -26,8 +27,31 @@ type ObjectAlias struct {
 	// SourceID holds the value of the "source_id" field.
 	SourceID string `json:"source_id,omitempty"`
 	// ExternalID holds the value of the "external_id" field.
-	ExternalID   string `json:"external_id,omitempty"`
+	ExternalID string `json:"external_id,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the ObjectAliasQuery when eager-loading is set.
+	Edges        ObjectAliasEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// ObjectAliasEdges holds the relations/edges for other nodes in the graph.
+type ObjectAliasEdges struct {
+	// Object holds the value of the object edge.
+	Object *Object `json:"object,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// ObjectOrErr returns the Object value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ObjectAliasEdges) ObjectOrErr() (*Object, error) {
+	if e.Object != nil {
+		return e.Object, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: object.Label}
+	}
+	return nil, &NotLoadedError{edge: "object"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -101,6 +125,11 @@ func (_m *ObjectAlias) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *ObjectAlias) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryObject queries the "object" edge of the ObjectAlias entity.
+func (_m *ObjectAlias) QueryObject() *ObjectQuery {
+	return NewObjectAliasClient(_m.config).QueryObject(_m)
 }
 
 // Update returns a builder for updating this ObjectAlias.

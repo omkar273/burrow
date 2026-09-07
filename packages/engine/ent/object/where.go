@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/omkar273/burrow/packages/engine/ent/predicate"
 )
 
@@ -507,6 +508,75 @@ func DeletedAtSourceIsNil() predicate.Object {
 // DeletedAtSourceNotNil applies the NotNil predicate on the "deleted_at_source" field.
 func DeletedAtSourceNotNil() predicate.Object {
 	return predicate.Object(sql.FieldNotNull(FieldDeletedAtSource))
+}
+
+// HasSource applies the HasEdge predicate on the "source" edge.
+func HasSource() predicate.Object {
+	return predicate.Object(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, SourceTable, SourceColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSourceWith applies the HasEdge predicate on the "source" edge with a given conditions (other predicates).
+func HasSourceWith(preds ...predicate.Source) predicate.Object {
+	return predicate.Object(func(s *sql.Selector) {
+		step := newSourceStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasAliases applies the HasEdge predicate on the "aliases" edge.
+func HasAliases() predicate.Object {
+	return predicate.Object(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, AliasesTable, AliasesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAliasesWith applies the HasEdge predicate on the "aliases" edge with a given conditions (other predicates).
+func HasAliasesWith(preds ...predicate.ObjectAlias) predicate.Object {
+	return predicate.Object(func(s *sql.Selector) {
+		step := newAliasesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasVersions applies the HasEdge predicate on the "versions" edge.
+func HasVersions() predicate.Object {
+	return predicate.Object(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, VersionsTable, VersionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasVersionsWith applies the HasEdge predicate on the "versions" edge with a given conditions (other predicates).
+func HasVersionsWith(preds ...predicate.ObjectVersion) predicate.Object {
+	return predicate.Object(func(s *sql.Selector) {
+		step := newVersionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

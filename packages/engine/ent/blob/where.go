@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/omkar273/burrow/packages/engine/ent/predicate"
 )
 
@@ -267,6 +268,29 @@ func SizeBytesLT(v int64) predicate.Blob {
 // SizeBytesLTE applies the LTE predicate on the "size_bytes" field.
 func SizeBytesLTE(v int64) predicate.Blob {
 	return predicate.Blob(sql.FieldLTE(FieldSizeBytes, v))
+}
+
+// HasVersions applies the HasEdge predicate on the "versions" edge.
+func HasVersions() predicate.Blob {
+	return predicate.Blob(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, VersionsTable, VersionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasVersionsWith applies the HasEdge predicate on the "versions" edge with a given conditions (other predicates).
+func HasVersionsWith(preds ...predicate.ObjectVersion) predicate.Blob {
+	return predicate.Blob(func(s *sql.Selector) {
+		step := newVersionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

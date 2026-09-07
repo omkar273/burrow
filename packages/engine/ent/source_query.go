@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -11,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/omkar273/burrow/packages/engine/ent/object"
 	"github.com/omkar273/burrow/packages/engine/ent/predicate"
 	"github.com/omkar273/burrow/packages/engine/ent/source"
 )
@@ -18,10 +20,11 @@ import (
 // SourceQuery is the builder for querying Source entities.
 type SourceQuery struct {
 	config
-	ctx        *QueryContext
-	order      []source.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Source
+	ctx         *QueryContext
+	order       []source.OrderOption
+	inters      []Interceptor
+	predicates  []predicate.Source
+	withObjects *ObjectQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -56,6 +59,28 @@ func (_q *SourceQuery) Unique(unique bool) *SourceQuery {
 func (_q *SourceQuery) Order(o ...source.OrderOption) *SourceQuery {
 	_q.order = append(_q.order, o...)
 	return _q
+}
+
+// QueryObjects chains the current query on the "objects" edge.
+func (_q *SourceQuery) QueryObjects() *ObjectQuery {
+	query := (&ObjectClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(source.Table, source.FieldID, selector),
+			sqlgraph.To(object.Table, object.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, source.ObjectsTable, source.ObjectsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Source entity from the query.
@@ -245,15 +270,27 @@ func (_q *SourceQuery) Clone() *SourceQuery {
 		return nil
 	}
 	return &SourceQuery{
-		config:     _q.config,
-		ctx:        _q.ctx.Clone(),
-		order:      append([]source.OrderOption{}, _q.order...),
-		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.Source{}, _q.predicates...),
+		config:      _q.config,
+		ctx:         _q.ctx.Clone(),
+		order:       append([]source.OrderOption{}, _q.order...),
+		inters:      append([]Interceptor{}, _q.inters...),
+		predicates:  append([]predicate.Source{}, _q.predicates...),
+		withObjects: _q.withObjects.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithObjects tells the query-builder to eager-load the nodes that are connected to
+// the "objects" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *SourceQuery) WithObjects(opts ...func(*ObjectQuery)) *SourceQuery {
+	query := (&ObjectClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withObjects = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -332,8 +369,11 @@ func (_q *SourceQuery) prepareQuery(ctx context.Context) error {
 
 func (_q *SourceQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Source, error) {
 	var (
-		nodes = []*Source{}
-		_spec = _q.querySpec()
+		nodes       = []*Source{}
+		_spec       = _q.querySpec()
+		loadedTypes = [1]bool{
+			_q.withObjects != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Source).scanValues(nil, columns)
@@ -341,6 +381,7 @@ func (_q *SourceQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Sourc
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &Source{config: _q.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -352,7 +393,45 @@ func (_q *SourceQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Sourc
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withObjects; query != nil {
+		if err := _q.loadObjects(ctx, query, nodes,
+			func(n *Source) { n.Edges.Objects = []*Object{} },
+			func(n *Source, e *Object) { n.Edges.Objects = append(n.Edges.Objects, e) }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (_q *SourceQuery) loadObjects(ctx context.Context, query *ObjectQuery, nodes []*Source, init func(*Source), assign func(*Source, *Object)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Source)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(object.FieldSourceID)
+	}
+	query.Where(predicate.Object(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(source.ObjectsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.SourceID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "source_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (_q *SourceQuery) sqlCount(ctx context.Context) (int, error) {

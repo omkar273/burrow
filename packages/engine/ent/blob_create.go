@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/omkar273/burrow/packages/engine/ent/blob"
+	"github.com/omkar273/burrow/packages/engine/ent/objectversion"
 )
 
 // BlobCreate is the builder for creating a Blob entity.
@@ -64,6 +65,21 @@ func (_c *BlobCreate) SetSizeBytes(v int64) *BlobCreate {
 func (_c *BlobCreate) SetID(v string) *BlobCreate {
 	_c.mutation.SetID(v)
 	return _c
+}
+
+// AddVersionIDs adds the "versions" edge to the ObjectVersion entity by IDs.
+func (_c *BlobCreate) AddVersionIDs(ids ...string) *BlobCreate {
+	_c.mutation.AddVersionIDs(ids...)
+	return _c
+}
+
+// AddVersions adds the "versions" edges to the ObjectVersion entity.
+func (_c *BlobCreate) AddVersions(v ...*ObjectVersion) *BlobCreate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddVersionIDs(ids...)
 }
 
 // Mutation returns the BlobMutation object of the builder.
@@ -185,6 +201,22 @@ func (_c *BlobCreate) createSpec() (*Blob, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.SizeBytes(); ok {
 		_spec.SetField(blob.FieldSizeBytes, field.TypeInt64, value)
 		_node.SizeBytes = value
+	}
+	if nodes := _c.mutation.VersionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   blob.VersionsTable,
+			Columns: []string{blob.VersionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(objectversion.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

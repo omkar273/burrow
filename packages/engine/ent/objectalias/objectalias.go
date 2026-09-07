@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -23,8 +24,17 @@ const (
 	FieldSourceID = "source_id"
 	// FieldExternalID holds the string denoting the external_id field in the database.
 	FieldExternalID = "external_id"
+	// EdgeObject holds the string denoting the object edge name in mutations.
+	EdgeObject = "object"
 	// Table holds the table name of the objectalias in the database.
 	Table = "object_alias"
+	// ObjectTable is the table that holds the object relation/edge.
+	ObjectTable = "object_alias"
+	// ObjectInverseTable is the table name for the Object entity.
+	// It exists in this package in order to avoid circular dependency with the "object" package.
+	ObjectInverseTable = "objects"
+	// ObjectColumn is the table column denoting the object relation/edge.
+	ObjectColumn = "object_id"
 )
 
 // Columns holds all SQL columns for objectalias fields.
@@ -93,4 +103,18 @@ func BySourceID(opts ...sql.OrderTermOption) OrderOption {
 // ByExternalID orders the results by the external_id field.
 func ByExternalID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldExternalID, opts...).ToFunc()
+}
+
+// ByObjectField orders the results by object field.
+func ByObjectField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newObjectStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newObjectStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ObjectInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, ObjectTable, ObjectColumn),
+	)
 }

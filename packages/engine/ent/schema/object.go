@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 
@@ -48,6 +49,19 @@ func (Object) Fields() []ent.Field {
 		field.Time("deleted_at_source").
 			Optional().
 			Nillable(),
+	}
+}
+
+func (Object) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.From("source", Source.Type).
+			Ref("objects").
+			Field("source_id").
+			Unique().
+			Required().
+			Immutable(),
+		edge.To("aliases", ObjectAlias.Type),
+		edge.To("versions", ObjectVersion.Type),
 	}
 }
 

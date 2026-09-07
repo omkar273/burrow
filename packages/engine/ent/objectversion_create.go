@@ -10,6 +10,8 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/omkar273/burrow/packages/engine/ent/blob"
+	"github.com/omkar273/burrow/packages/engine/ent/object"
 	"github.com/omkar273/burrow/packages/engine/ent/objectversion"
 )
 
@@ -86,6 +88,16 @@ func (_c *ObjectVersionCreate) SetID(v string) *ObjectVersionCreate {
 	return _c
 }
 
+// SetObject sets the "object" edge to the Object entity.
+func (_c *ObjectVersionCreate) SetObject(v *Object) *ObjectVersionCreate {
+	return _c.SetObjectID(v.ID)
+}
+
+// SetBlob sets the "blob" edge to the Blob entity.
+func (_c *ObjectVersionCreate) SetBlob(v *Blob) *ObjectVersionCreate {
+	return _c.SetBlobID(v.ID)
+}
+
 // Mutation returns the ObjectVersionMutation object of the builder.
 func (_c *ObjectVersionCreate) Mutation() *ObjectVersionMutation {
 	return _c.mutation
@@ -158,6 +170,12 @@ func (_c *ObjectVersionCreate) check() error {
 	if _, ok := _c.mutation.CapturedAt(); !ok {
 		return &ValidationError{Name: "captured_at", err: errors.New(`ent: missing required field "ObjectVersion.captured_at"`)}
 	}
+	if len(_c.mutation.ObjectIDs()) == 0 {
+		return &ValidationError{Name: "object", err: errors.New(`ent: missing required edge "ObjectVersion.object"`)}
+	}
+	if len(_c.mutation.BlobIDs()) == 0 {
+		return &ValidationError{Name: "blob", err: errors.New(`ent: missing required edge "ObjectVersion.blob"`)}
+	}
 	return nil
 }
 
@@ -201,14 +219,6 @@ func (_c *ObjectVersionCreate) createSpec() (*ObjectVersion, *sqlgraph.CreateSpe
 		_spec.SetField(objectversion.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := _c.mutation.ObjectID(); ok {
-		_spec.SetField(objectversion.FieldObjectID, field.TypeString, value)
-		_node.ObjectID = value
-	}
-	if value, ok := _c.mutation.BlobID(); ok {
-		_spec.SetField(objectversion.FieldBlobID, field.TypeString, value)
-		_node.BlobID = value
-	}
 	if value, ok := _c.mutation.RestoredFromVersionID(); ok {
 		_spec.SetField(objectversion.FieldRestoredFromVersionID, field.TypeString, value)
 		_node.RestoredFromVersionID = &value
@@ -216,6 +226,40 @@ func (_c *ObjectVersionCreate) createSpec() (*ObjectVersion, *sqlgraph.CreateSpe
 	if value, ok := _c.mutation.CapturedAt(); ok {
 		_spec.SetField(objectversion.FieldCapturedAt, field.TypeTime, value)
 		_node.CapturedAt = value
+	}
+	if nodes := _c.mutation.ObjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   objectversion.ObjectTable,
+			Columns: []string{objectversion.ObjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(object.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.ObjectID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.BlobIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   objectversion.BlobTable,
+			Columns: []string{objectversion.BlobColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(blob.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.BlobID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

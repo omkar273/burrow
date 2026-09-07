@@ -75,7 +75,18 @@ func (_u *ObjectAliasUpdate) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *ObjectAliasUpdate) check() error {
+	if _u.mutation.ObjectCleared() && len(_u.mutation.ObjectIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "ObjectAlias.object"`)
+	}
+	return nil
+}
+
 func (_u *ObjectAliasUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(objectalias.Table, objectalias.Columns, sqlgraph.NewFieldSpec(objectalias.FieldID, field.TypeString))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -167,7 +178,18 @@ func (_u *ObjectAliasUpdateOne) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *ObjectAliasUpdateOne) check() error {
+	if _u.mutation.ObjectCleared() && len(_u.mutation.ObjectIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "ObjectAlias.object"`)
+	}
+	return nil
+}
+
 func (_u *ObjectAliasUpdateOne) sqlSave(ctx context.Context) (_node *ObjectAlias, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(objectalias.Table, objectalias.Columns, sqlgraph.NewFieldSpec(objectalias.FieldID, field.TypeString))
 	id, ok := _u.mutation.ID()
 	if !ok {

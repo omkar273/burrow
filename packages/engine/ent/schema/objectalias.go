@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 
@@ -24,6 +25,17 @@ func (ObjectAlias) Fields() []ent.Field {
 		field.String("object_id").SchemaType(sqliteText).Immutable().NotEmpty(),
 		field.String("source_id").SchemaType(sqliteText).Immutable().NotEmpty(),
 		field.String("external_id").SchemaType(sqliteText).Immutable().NotEmpty(),
+	}
+}
+
+func (ObjectAlias) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.From("object", Object.Type).
+			Ref("aliases").
+			Field("object_id").
+			Unique().
+			Required().
+			Immutable(),
 	}
 }
 

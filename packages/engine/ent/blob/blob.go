@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -21,8 +22,17 @@ const (
 	FieldContentHash = "content_hash"
 	// FieldSizeBytes holds the string denoting the size_bytes field in the database.
 	FieldSizeBytes = "size_bytes"
+	// EdgeVersions holds the string denoting the versions edge name in mutations.
+	EdgeVersions = "versions"
 	// Table holds the table name of the blob in the database.
 	Table = "blobs"
+	// VersionsTable is the table that holds the versions relation/edge.
+	VersionsTable = "object_versions"
+	// VersionsInverseTable is the table name for the ObjectVersion entity.
+	// It exists in this package in order to avoid circular dependency with the "objectversion" package.
+	VersionsInverseTable = "object_versions"
+	// VersionsColumn is the table column denoting the versions relation/edge.
+	VersionsColumn = "blob_id"
 )
 
 // Columns holds all SQL columns for blob fields.
@@ -83,4 +93,25 @@ func ByContentHash(opts ...sql.OrderTermOption) OrderOption {
 // BySizeBytes orders the results by the size_bytes field.
 func BySizeBytes(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSizeBytes, opts...).ToFunc()
+}
+
+// ByVersionsCount orders the results by versions count.
+func ByVersionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newVersionsStep(), opts...)
+	}
+}
+
+// ByVersions orders the results by versions terms.
+func ByVersions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newVersionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newVersionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(VersionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, VersionsTable, VersionsColumn),
+	)
 }

@@ -54,6 +54,7 @@ func (r *objectRepository) Create(ctx context.Context, o *object.Object) error {
 		SetExternalID(o.ExternalID).
 		SetFirstSeenAt(o.FirstSeenAt).
 		SetLastSeenAt(o.LastSeenAt).
+		SetNillableDeletedAtSource(o.DeletedAtSource).
 		Exec(ctx)
 	if err != nil {
 		return ierr.Wrap(err, "creating object").Mark(ierr.ErrInternal)
@@ -101,15 +102,42 @@ func (r *objectRepository) GetByExternalID(ctx context.Context, sourceID, extern
 	return r.Get(ctx, alias.ObjectID)
 }
 
+// AddAlias refuses to shadow an identity an Object already claims.
+//
+// objects and object_alias hold separate unique indexes on
+// (source_id, external_id), so the schema alone permits the same identity in
+// both. GetByExternalID consults objects first, so a shadowing alias would
+// resolve to the wrong object. The check runs in the same transaction as the
+// insert, because two concurrent AddAlias calls could otherwise both pass it.
 func (r *objectRepository) AddAlias(ctx context.Context, objectID, sourceID, externalID string) error {
-	err := r.c.ent.ObjectAlias.Create().
+	tx, err := r.c.ent.Tx(ctx)
+	if err != nil {
+		return ierr.Wrap(err, "beginning alias transaction").Mark(ierr.ErrInternal)
+	}
+	defer tx.Rollback() //nolint:errcheck // no-op once committed
+
+	shadowed, err := tx.Object.Query().
+		Where(entobject.SourceID(sourceID), entobject.ExternalID(externalID)).
+		Exist(ctx)
+	if err != nil {
+		return ierr.Wrap(err, "checking for a shadowed object identity").Mark(ierr.ErrInternal)
+	}
+	if shadowed {
+		return ierr.New("external id " + externalID + " already belongs to an object").
+			WithHint("an alias may not shadow an identity an object already claims").
+			Mark(ierr.ErrValidation)
+	}
+
+	if err := tx.ObjectAlias.Create().
 		SetID(types.NewID(types.PrefixObject)).
 		SetObjectID(objectID).
 		SetSourceID(sourceID).
 		SetExternalID(externalID).
-		Exec(ctx)
-	if err != nil {
+		Exec(ctx); err != nil {
 		return ierr.Wrap(err, "creating object alias").Mark(ierr.ErrInternal)
+	}
+	if err := tx.Commit(); err != nil {
+		return ierr.Wrap(err, "committing object alias").Mark(ierr.ErrInternal)
 	}
 	return nil
 }
@@ -144,18 +172,4 @@ func (r *objectRepository) CurrentVersion(ctx context.Context, objectID string) 
 		return object.Version{}, ierr.Wrap(err, "getting current version").Mark(ierr.ErrInternal)
 	}
 	return versionFromEnt(row), nil
-}
-
-func (r *objectRepository) OwnerOfBlob(ctx context.Context, blobID string) (object.Object, error) {
-	version, err := r.c.ent.ObjectVersion.Query().
-		Where(entversion.BlobID(blobID)).
-		Order(generated.Asc(entversion.FieldCapturedAt)).
-		First(ctx)
-	if err != nil {
-		if generated.IsNotFound(err) {
-			return object.Object{}, ierr.New("no object references blob " + blobID).Mark(ierr.ErrNotFound)
-		}
-		return object.Object{}, ierr.Wrap(err, "finding blob owner").Mark(ierr.ErrInternal)
-	}
-	return r.Get(ctx, version.ObjectID)
 }

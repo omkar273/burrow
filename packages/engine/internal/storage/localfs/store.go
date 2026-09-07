@@ -64,6 +64,21 @@ func (s *store) Put(_ context.Context, key string, r io.Reader, _ int64) error {
 	if err := os.Rename(tmpName, final); err != nil {
 		return ierr.Wrap(err, "publishing object").Mark(ierr.ErrInternal)
 	}
+
+	// File fsync persists bytes, not the rename. Skip this and a crash
+	// can leave a catalog row with no blob.
+	return syncDir(filepath.Dir(final))
+}
+
+func syncDir(dir string) error {
+	d, err := os.Open(dir)
+	if err != nil {
+		return ierr.Wrap(err, "opening object directory to sync").Mark(ierr.ErrInternal)
+	}
+	defer d.Close()
+	if err := d.Sync(); err != nil {
+		return ierr.Wrap(err, "syncing object directory").Mark(ierr.ErrInternal)
+	}
 	return nil
 }
 

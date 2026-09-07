@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/omkar273/burrow/packages/engine/ent/object"
 	"github.com/omkar273/burrow/packages/engine/ent/objectalias"
 )
 
@@ -70,6 +71,11 @@ func (_c *ObjectAliasCreate) SetExternalID(v string) *ObjectAliasCreate {
 func (_c *ObjectAliasCreate) SetID(v string) *ObjectAliasCreate {
 	_c.mutation.SetID(v)
 	return _c
+}
+
+// SetObject sets the "object" edge to the Object entity.
+func (_c *ObjectAliasCreate) SetObject(v *Object) *ObjectAliasCreate {
+	return _c.SetObjectID(v.ID)
 }
 
 // Mutation returns the ObjectAliasMutation object of the builder.
@@ -149,6 +155,9 @@ func (_c *ObjectAliasCreate) check() error {
 			return &ValidationError{Name: "external_id", err: fmt.Errorf(`ent: validator failed for field "ObjectAlias.external_id": %w`, err)}
 		}
 	}
+	if len(_c.mutation.ObjectIDs()) == 0 {
+		return &ValidationError{Name: "object", err: errors.New(`ent: missing required edge "ObjectAlias.object"`)}
+	}
 	return nil
 }
 
@@ -192,10 +201,6 @@ func (_c *ObjectAliasCreate) createSpec() (*ObjectAlias, *sqlgraph.CreateSpec) {
 		_spec.SetField(objectalias.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := _c.mutation.ObjectID(); ok {
-		_spec.SetField(objectalias.FieldObjectID, field.TypeString, value)
-		_node.ObjectID = value
-	}
 	if value, ok := _c.mutation.SourceID(); ok {
 		_spec.SetField(objectalias.FieldSourceID, field.TypeString, value)
 		_node.SourceID = value
@@ -203,6 +208,23 @@ func (_c *ObjectAliasCreate) createSpec() (*ObjectAlias, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ExternalID(); ok {
 		_spec.SetField(objectalias.FieldExternalID, field.TypeString, value)
 		_node.ExternalID = value
+	}
+	if nodes := _c.mutation.ObjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   objectalias.ObjectTable,
+			Columns: []string{objectalias.ObjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(object.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.ObjectID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

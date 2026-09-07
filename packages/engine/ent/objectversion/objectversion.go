@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -25,8 +26,26 @@ const (
 	FieldRestoredFromVersionID = "restored_from_version_id"
 	// FieldCapturedAt holds the string denoting the captured_at field in the database.
 	FieldCapturedAt = "captured_at"
+	// EdgeObject holds the string denoting the object edge name in mutations.
+	EdgeObject = "object"
+	// EdgeBlob holds the string denoting the blob edge name in mutations.
+	EdgeBlob = "blob"
 	// Table holds the table name of the objectversion in the database.
 	Table = "object_versions"
+	// ObjectTable is the table that holds the object relation/edge.
+	ObjectTable = "object_versions"
+	// ObjectInverseTable is the table name for the Object entity.
+	// It exists in this package in order to avoid circular dependency with the "object" package.
+	ObjectInverseTable = "objects"
+	// ObjectColumn is the table column denoting the object relation/edge.
+	ObjectColumn = "object_id"
+	// BlobTable is the table that holds the blob relation/edge.
+	BlobTable = "object_versions"
+	// BlobInverseTable is the table name for the Blob entity.
+	// It exists in this package in order to avoid circular dependency with the "blob" package.
+	BlobInverseTable = "blobs"
+	// BlobColumn is the table column denoting the blob relation/edge.
+	BlobColumn = "blob_id"
 )
 
 // Columns holds all SQL columns for objectversion fields.
@@ -99,4 +118,32 @@ func ByRestoredFromVersionID(opts ...sql.OrderTermOption) OrderOption {
 // ByCapturedAt orders the results by the captured_at field.
 func ByCapturedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCapturedAt, opts...).ToFunc()
+}
+
+// ByObjectField orders the results by object field.
+func ByObjectField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newObjectStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByBlobField orders the results by blob field.
+func ByBlobField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBlobStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newObjectStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ObjectInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, ObjectTable, ObjectColumn),
+	)
+}
+func newBlobStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BlobInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, BlobTable, BlobColumn),
+	)
 }

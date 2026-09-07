@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -29,8 +30,35 @@ const (
 	FieldLastSeenAt = "last_seen_at"
 	// FieldDeletedAtSource holds the string denoting the deleted_at_source field in the database.
 	FieldDeletedAtSource = "deleted_at_source"
+	// EdgeSource holds the string denoting the source edge name in mutations.
+	EdgeSource = "source"
+	// EdgeAliases holds the string denoting the aliases edge name in mutations.
+	EdgeAliases = "aliases"
+	// EdgeVersions holds the string denoting the versions edge name in mutations.
+	EdgeVersions = "versions"
 	// Table holds the table name of the object in the database.
 	Table = "objects"
+	// SourceTable is the table that holds the source relation/edge.
+	SourceTable = "objects"
+	// SourceInverseTable is the table name for the Source entity.
+	// It exists in this package in order to avoid circular dependency with the "source" package.
+	SourceInverseTable = "sources"
+	// SourceColumn is the table column denoting the source relation/edge.
+	SourceColumn = "source_id"
+	// AliasesTable is the table that holds the aliases relation/edge.
+	AliasesTable = "object_alias"
+	// AliasesInverseTable is the table name for the ObjectAlias entity.
+	// It exists in this package in order to avoid circular dependency with the "objectalias" package.
+	AliasesInverseTable = "object_alias"
+	// AliasesColumn is the table column denoting the aliases relation/edge.
+	AliasesColumn = "object_id"
+	// VersionsTable is the table that holds the versions relation/edge.
+	VersionsTable = "object_versions"
+	// VersionsInverseTable is the table name for the ObjectVersion entity.
+	// It exists in this package in order to avoid circular dependency with the "objectversion" package.
+	VersionsInverseTable = "object_versions"
+	// VersionsColumn is the table column denoting the versions relation/edge.
+	VersionsColumn = "object_id"
 )
 
 // Columns holds all SQL columns for object fields.
@@ -117,4 +145,60 @@ func ByLastSeenAt(opts ...sql.OrderTermOption) OrderOption {
 // ByDeletedAtSource orders the results by the deleted_at_source field.
 func ByDeletedAtSource(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeletedAtSource, opts...).ToFunc()
+}
+
+// BySourceField orders the results by source field.
+func BySourceField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSourceStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByAliasesCount orders the results by aliases count.
+func ByAliasesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAliasesStep(), opts...)
+	}
+}
+
+// ByAliases orders the results by aliases terms.
+func ByAliases(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAliasesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByVersionsCount orders the results by versions count.
+func ByVersionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newVersionsStep(), opts...)
+	}
+}
+
+// ByVersions orders the results by versions terms.
+func ByVersions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newVersionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newSourceStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SourceInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, SourceTable, SourceColumn),
+	)
+}
+func newAliasesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AliasesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AliasesTable, AliasesColumn),
+	)
+}
+func newVersionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(VersionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, VersionsTable, VersionsColumn),
+	)
 }

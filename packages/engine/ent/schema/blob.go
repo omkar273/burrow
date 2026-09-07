@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 
@@ -32,6 +33,12 @@ func (Blob) Fields() []ent.Field {
 		field.Int64("size_bytes").
 			Immutable().
 			NonNegative(),
+	}
+}
+
+func (Blob) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("versions", ObjectVersion.Type),
 	}
 }
 

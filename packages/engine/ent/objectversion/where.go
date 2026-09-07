@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/omkar273/burrow/packages/engine/ent/predicate"
 )
 
@@ -417,6 +418,52 @@ func CapturedAtLT(v time.Time) predicate.ObjectVersion {
 // CapturedAtLTE applies the LTE predicate on the "captured_at" field.
 func CapturedAtLTE(v time.Time) predicate.ObjectVersion {
 	return predicate.ObjectVersion(sql.FieldLTE(FieldCapturedAt, v))
+}
+
+// HasObject applies the HasEdge predicate on the "object" edge.
+func HasObject() predicate.ObjectVersion {
+	return predicate.ObjectVersion(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, ObjectTable, ObjectColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasObjectWith applies the HasEdge predicate on the "object" edge with a given conditions (other predicates).
+func HasObjectWith(preds ...predicate.Object) predicate.ObjectVersion {
+	return predicate.ObjectVersion(func(s *sql.Selector) {
+		step := newObjectStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasBlob applies the HasEdge predicate on the "blob" edge.
+func HasBlob() predicate.ObjectVersion {
+	return predicate.ObjectVersion(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, BlobTable, BlobColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasBlobWith applies the HasEdge predicate on the "blob" edge with a given conditions (other predicates).
+func HasBlobWith(preds ...predicate.Blob) predicate.ObjectVersion {
+	return predicate.ObjectVersion(func(s *sql.Selector) {
+		step := newBlobStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

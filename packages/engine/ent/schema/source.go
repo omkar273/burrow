@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 
@@ -23,6 +24,10 @@ func (Source) Fields() []ent.Field {
 		field.String("account_email").SchemaType(sqliteText).NotEmpty(),
 		field.String("status").SchemaType(sqliteText).NotEmpty(),
 	}
+}
+
+func (Source) Edges() []ent.Edge {
+	return []ent.Edge{edge.To("objects", Object.Type)}
 }
 
 func (Source) Indexes() []ent.Index {

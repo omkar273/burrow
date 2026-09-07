@@ -24,8 +24,29 @@ type Blob struct {
 	// ContentHash holds the value of the "content_hash" field.
 	ContentHash string `json:"content_hash,omitempty"`
 	// SizeBytes holds the value of the "size_bytes" field.
-	SizeBytes    int64 `json:"size_bytes,omitempty"`
+	SizeBytes int64 `json:"size_bytes,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the BlobQuery when eager-loading is set.
+	Edges        BlobEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// BlobEdges holds the relations/edges for other nodes in the graph.
+type BlobEdges struct {
+	// Versions holds the value of the versions edge.
+	Versions []*ObjectVersion `json:"versions,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// VersionsOrErr returns the Versions value or an error if the edge
+// was not loaded in eager-loading.
+func (e BlobEdges) VersionsOrErr() ([]*ObjectVersion, error) {
+	if e.loadedTypes[0] {
+		return e.Versions, nil
+	}
+	return nil, &NotLoadedError{edge: "versions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -95,6 +116,11 @@ func (_m *Blob) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Blob) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryVersions queries the "versions" edge of the Blob entity.
+func (_m *Blob) QueryVersions() *ObjectVersionQuery {
+	return NewBlobClient(_m.config).QueryVersions(_m)
 }
 
 // Update returns a builder for updating this Blob.

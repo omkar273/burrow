@@ -38,18 +38,21 @@ const (
 // BlobMutation represents an operation that mutates the Blob nodes in the graph.
 type BlobMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *string
-	created_at    *time.Time
-	updated_at    *time.Time
-	content_hash  *string
-	size_bytes    *int64
-	addsize_bytes *int64
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*Blob, error)
-	predicates    []predicate.Blob
+	op              Op
+	typ             string
+	id              *string
+	created_at      *time.Time
+	updated_at      *time.Time
+	content_hash    *string
+	size_bytes      *int64
+	addsize_bytes   *int64
+	clearedFields   map[string]struct{}
+	versions        map[string]struct{}
+	removedversions map[string]struct{}
+	clearedversions bool
+	done            bool
+	oldValue        func(context.Context) (*Blob, error)
+	predicates      []predicate.Blob
 }
 
 var _ ent.Mutation = (*BlobMutation)(nil)
@@ -320,6 +323,60 @@ func (m *BlobMutation) ResetSizeBytes() {
 	m.addsize_bytes = nil
 }
 
+// AddVersionIDs adds the "versions" edge to the ObjectVersion entity by ids.
+func (m *BlobMutation) AddVersionIDs(ids ...string) {
+	if m.versions == nil {
+		m.versions = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.versions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearVersions clears the "versions" edge to the ObjectVersion entity.
+func (m *BlobMutation) ClearVersions() {
+	m.clearedversions = true
+}
+
+// VersionsCleared reports if the "versions" edge to the ObjectVersion entity was cleared.
+func (m *BlobMutation) VersionsCleared() bool {
+	return m.clearedversions
+}
+
+// RemoveVersionIDs removes the "versions" edge to the ObjectVersion entity by IDs.
+func (m *BlobMutation) RemoveVersionIDs(ids ...string) {
+	if m.removedversions == nil {
+		m.removedversions = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.versions, ids[i])
+		m.removedversions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedVersions returns the removed IDs of the "versions" edge to the ObjectVersion entity.
+func (m *BlobMutation) RemovedVersionsIDs() (ids []string) {
+	for id := range m.removedversions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// VersionsIDs returns the "versions" edge IDs in the mutation.
+func (m *BlobMutation) VersionsIDs() (ids []string) {
+	for id := range m.versions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetVersions resets all changes to the "versions" edge.
+func (m *BlobMutation) ResetVersions() {
+	m.versions = nil
+	m.clearedversions = false
+	m.removedversions = nil
+}
+
 // Where appends a list predicates to the BlobMutation builder.
 func (m *BlobMutation) Where(ps ...predicate.Blob) {
 	m.predicates = append(m.predicates, ps...)
@@ -519,49 +576,85 @@ func (m *BlobMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *BlobMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.versions != nil {
+		edges = append(edges, blob.EdgeVersions)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *BlobMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case blob.EdgeVersions:
+		ids := make([]ent.Value, 0, len(m.versions))
+		for id := range m.versions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *BlobMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.removedversions != nil {
+		edges = append(edges, blob.EdgeVersions)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *BlobMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case blob.EdgeVersions:
+		ids := make([]ent.Value, 0, len(m.removedversions))
+		for id := range m.removedversions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *BlobMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedversions {
+		edges = append(edges, blob.EdgeVersions)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *BlobMutation) EdgeCleared(name string) bool {
+	switch name {
+	case blob.EdgeVersions:
+		return m.clearedversions
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *BlobMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Blob unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *BlobMutation) ResetEdge(name string) error {
+	switch name {
+	case blob.EdgeVersions:
+		m.ResetVersions()
+		return nil
+	}
 	return fmt.Errorf("unknown Blob edge %s", name)
 }
 
@@ -573,13 +666,20 @@ type ObjectMutation struct {
 	id                *string
 	created_at        *time.Time
 	updated_at        *time.Time
-	source_id         *string
 	kind              *string
 	external_id       *string
 	first_seen_at     *time.Time
 	last_seen_at      *time.Time
 	deleted_at_source *time.Time
 	clearedFields     map[string]struct{}
+	source            *string
+	clearedsource     bool
+	aliases           map[string]struct{}
+	removedaliases    map[string]struct{}
+	clearedaliases    bool
+	versions          map[string]struct{}
+	removedversions   map[string]struct{}
+	clearedversions   bool
 	done              bool
 	oldValue          func(context.Context) (*Object, error)
 	predicates        []predicate.Object
@@ -763,12 +863,12 @@ func (m *ObjectMutation) ResetUpdatedAt() {
 
 // SetSourceID sets the "source_id" field.
 func (m *ObjectMutation) SetSourceID(s string) {
-	m.source_id = &s
+	m.source = &s
 }
 
 // SourceID returns the value of the "source_id" field in the mutation.
 func (m *ObjectMutation) SourceID() (r string, exists bool) {
-	v := m.source_id
+	v := m.source
 	if v == nil {
 		return
 	}
@@ -794,7 +894,7 @@ func (m *ObjectMutation) OldSourceID(ctx context.Context) (v string, err error) 
 
 // ResetSourceID resets all changes to the "source_id" field.
 func (m *ObjectMutation) ResetSourceID() {
-	m.source_id = nil
+	m.source = nil
 }
 
 // SetKind sets the "kind" field.
@@ -990,6 +1090,141 @@ func (m *ObjectMutation) ResetDeletedAtSource() {
 	delete(m.clearedFields, object.FieldDeletedAtSource)
 }
 
+// ClearSource clears the "source" edge to the Source entity.
+func (m *ObjectMutation) ClearSource() {
+	m.clearedsource = true
+	m.clearedFields[object.FieldSourceID] = struct{}{}
+}
+
+// SourceCleared reports if the "source" edge to the Source entity was cleared.
+func (m *ObjectMutation) SourceCleared() bool {
+	return m.clearedsource
+}
+
+// SourceIDs returns the "source" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// SourceID instead. It exists only for internal usage by the builders.
+func (m *ObjectMutation) SourceIDs() (ids []string) {
+	if id := m.source; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetSource resets all changes to the "source" edge.
+func (m *ObjectMutation) ResetSource() {
+	m.source = nil
+	m.clearedsource = false
+}
+
+// AddAliasIDs adds the "aliases" edge to the ObjectAlias entity by ids.
+func (m *ObjectMutation) AddAliasIDs(ids ...string) {
+	if m.aliases == nil {
+		m.aliases = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.aliases[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAliases clears the "aliases" edge to the ObjectAlias entity.
+func (m *ObjectMutation) ClearAliases() {
+	m.clearedaliases = true
+}
+
+// AliasesCleared reports if the "aliases" edge to the ObjectAlias entity was cleared.
+func (m *ObjectMutation) AliasesCleared() bool {
+	return m.clearedaliases
+}
+
+// RemoveAliasIDs removes the "aliases" edge to the ObjectAlias entity by IDs.
+func (m *ObjectMutation) RemoveAliasIDs(ids ...string) {
+	if m.removedaliases == nil {
+		m.removedaliases = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.aliases, ids[i])
+		m.removedaliases[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAliases returns the removed IDs of the "aliases" edge to the ObjectAlias entity.
+func (m *ObjectMutation) RemovedAliasesIDs() (ids []string) {
+	for id := range m.removedaliases {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AliasesIDs returns the "aliases" edge IDs in the mutation.
+func (m *ObjectMutation) AliasesIDs() (ids []string) {
+	for id := range m.aliases {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAliases resets all changes to the "aliases" edge.
+func (m *ObjectMutation) ResetAliases() {
+	m.aliases = nil
+	m.clearedaliases = false
+	m.removedaliases = nil
+}
+
+// AddVersionIDs adds the "versions" edge to the ObjectVersion entity by ids.
+func (m *ObjectMutation) AddVersionIDs(ids ...string) {
+	if m.versions == nil {
+		m.versions = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.versions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearVersions clears the "versions" edge to the ObjectVersion entity.
+func (m *ObjectMutation) ClearVersions() {
+	m.clearedversions = true
+}
+
+// VersionsCleared reports if the "versions" edge to the ObjectVersion entity was cleared.
+func (m *ObjectMutation) VersionsCleared() bool {
+	return m.clearedversions
+}
+
+// RemoveVersionIDs removes the "versions" edge to the ObjectVersion entity by IDs.
+func (m *ObjectMutation) RemoveVersionIDs(ids ...string) {
+	if m.removedversions == nil {
+		m.removedversions = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.versions, ids[i])
+		m.removedversions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedVersions returns the removed IDs of the "versions" edge to the ObjectVersion entity.
+func (m *ObjectMutation) RemovedVersionsIDs() (ids []string) {
+	for id := range m.removedversions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// VersionsIDs returns the "versions" edge IDs in the mutation.
+func (m *ObjectMutation) VersionsIDs() (ids []string) {
+	for id := range m.versions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetVersions resets all changes to the "versions" edge.
+func (m *ObjectMutation) ResetVersions() {
+	m.versions = nil
+	m.clearedversions = false
+	m.removedversions = nil
+}
+
 // Where appends a list predicates to the ObjectMutation builder.
 func (m *ObjectMutation) Where(ps ...predicate.Object) {
 	m.predicates = append(m.predicates, ps...)
@@ -1031,7 +1266,7 @@ func (m *ObjectMutation) Fields() []string {
 	if m.updated_at != nil {
 		fields = append(fields, object.FieldUpdatedAt)
 	}
-	if m.source_id != nil {
+	if m.source != nil {
 		fields = append(fields, object.FieldSourceID)
 	}
 	if m.kind != nil {
@@ -1251,49 +1486,129 @@ func (m *ObjectMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ObjectMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 3)
+	if m.source != nil {
+		edges = append(edges, object.EdgeSource)
+	}
+	if m.aliases != nil {
+		edges = append(edges, object.EdgeAliases)
+	}
+	if m.versions != nil {
+		edges = append(edges, object.EdgeVersions)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *ObjectMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case object.EdgeSource:
+		if id := m.source; id != nil {
+			return []ent.Value{*id}
+		}
+	case object.EdgeAliases:
+		ids := make([]ent.Value, 0, len(m.aliases))
+		for id := range m.aliases {
+			ids = append(ids, id)
+		}
+		return ids
+	case object.EdgeVersions:
+		ids := make([]ent.Value, 0, len(m.versions))
+		for id := range m.versions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ObjectMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 3)
+	if m.removedaliases != nil {
+		edges = append(edges, object.EdgeAliases)
+	}
+	if m.removedversions != nil {
+		edges = append(edges, object.EdgeVersions)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *ObjectMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case object.EdgeAliases:
+		ids := make([]ent.Value, 0, len(m.removedaliases))
+		for id := range m.removedaliases {
+			ids = append(ids, id)
+		}
+		return ids
+	case object.EdgeVersions:
+		ids := make([]ent.Value, 0, len(m.removedversions))
+		for id := range m.removedversions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ObjectMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 3)
+	if m.clearedsource {
+		edges = append(edges, object.EdgeSource)
+	}
+	if m.clearedaliases {
+		edges = append(edges, object.EdgeAliases)
+	}
+	if m.clearedversions {
+		edges = append(edges, object.EdgeVersions)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *ObjectMutation) EdgeCleared(name string) bool {
+	switch name {
+	case object.EdgeSource:
+		return m.clearedsource
+	case object.EdgeAliases:
+		return m.clearedaliases
+	case object.EdgeVersions:
+		return m.clearedversions
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *ObjectMutation) ClearEdge(name string) error {
+	switch name {
+	case object.EdgeSource:
+		m.ClearSource()
+		return nil
+	}
 	return fmt.Errorf("unknown Object unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *ObjectMutation) ResetEdge(name string) error {
+	switch name {
+	case object.EdgeSource:
+		m.ResetSource()
+		return nil
+	case object.EdgeAliases:
+		m.ResetAliases()
+		return nil
+	case object.EdgeVersions:
+		m.ResetVersions()
+		return nil
+	}
 	return fmt.Errorf("unknown Object edge %s", name)
 }
 
@@ -1305,10 +1620,11 @@ type ObjectAliasMutation struct {
 	id            *string
 	created_at    *time.Time
 	updated_at    *time.Time
-	object_id     *string
 	source_id     *string
 	external_id   *string
 	clearedFields map[string]struct{}
+	object        *string
+	clearedobject bool
 	done          bool
 	oldValue      func(context.Context) (*ObjectAlias, error)
 	predicates    []predicate.ObjectAlias
@@ -1492,12 +1808,12 @@ func (m *ObjectAliasMutation) ResetUpdatedAt() {
 
 // SetObjectID sets the "object_id" field.
 func (m *ObjectAliasMutation) SetObjectID(s string) {
-	m.object_id = &s
+	m.object = &s
 }
 
 // ObjectID returns the value of the "object_id" field in the mutation.
 func (m *ObjectAliasMutation) ObjectID() (r string, exists bool) {
-	v := m.object_id
+	v := m.object
 	if v == nil {
 		return
 	}
@@ -1523,7 +1839,7 @@ func (m *ObjectAliasMutation) OldObjectID(ctx context.Context) (v string, err er
 
 // ResetObjectID resets all changes to the "object_id" field.
 func (m *ObjectAliasMutation) ResetObjectID() {
-	m.object_id = nil
+	m.object = nil
 }
 
 // SetSourceID sets the "source_id" field.
@@ -1598,6 +1914,33 @@ func (m *ObjectAliasMutation) ResetExternalID() {
 	m.external_id = nil
 }
 
+// ClearObject clears the "object" edge to the Object entity.
+func (m *ObjectAliasMutation) ClearObject() {
+	m.clearedobject = true
+	m.clearedFields[objectalias.FieldObjectID] = struct{}{}
+}
+
+// ObjectCleared reports if the "object" edge to the Object entity was cleared.
+func (m *ObjectAliasMutation) ObjectCleared() bool {
+	return m.clearedobject
+}
+
+// ObjectIDs returns the "object" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ObjectID instead. It exists only for internal usage by the builders.
+func (m *ObjectAliasMutation) ObjectIDs() (ids []string) {
+	if id := m.object; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetObject resets all changes to the "object" edge.
+func (m *ObjectAliasMutation) ResetObject() {
+	m.object = nil
+	m.clearedobject = false
+}
+
 // Where appends a list predicates to the ObjectAliasMutation builder.
 func (m *ObjectAliasMutation) Where(ps ...predicate.ObjectAlias) {
 	m.predicates = append(m.predicates, ps...)
@@ -1639,7 +1982,7 @@ func (m *ObjectAliasMutation) Fields() []string {
 	if m.updated_at != nil {
 		fields = append(fields, objectalias.FieldUpdatedAt)
 	}
-	if m.object_id != nil {
+	if m.object != nil {
 		fields = append(fields, objectalias.FieldObjectID)
 	}
 	if m.source_id != nil {
@@ -1799,19 +2142,28 @@ func (m *ObjectAliasMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ObjectAliasMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.object != nil {
+		edges = append(edges, objectalias.EdgeObject)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *ObjectAliasMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case objectalias.EdgeObject:
+		if id := m.object; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ObjectAliasMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
@@ -1823,25 +2175,42 @@ func (m *ObjectAliasMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ObjectAliasMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedobject {
+		edges = append(edges, objectalias.EdgeObject)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *ObjectAliasMutation) EdgeCleared(name string) bool {
+	switch name {
+	case objectalias.EdgeObject:
+		return m.clearedobject
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *ObjectAliasMutation) ClearEdge(name string) error {
+	switch name {
+	case objectalias.EdgeObject:
+		m.ClearObject()
+		return nil
+	}
 	return fmt.Errorf("unknown ObjectAlias unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *ObjectAliasMutation) ResetEdge(name string) error {
+	switch name {
+	case objectalias.EdgeObject:
+		m.ResetObject()
+		return nil
+	}
 	return fmt.Errorf("unknown ObjectAlias edge %s", name)
 }
 
@@ -1853,11 +2222,13 @@ type ObjectVersionMutation struct {
 	id                       *string
 	created_at               *time.Time
 	updated_at               *time.Time
-	object_id                *string
-	blob_id                  *string
 	restored_from_version_id *string
 	captured_at              *time.Time
 	clearedFields            map[string]struct{}
+	object                   *string
+	clearedobject            bool
+	blob                     *string
+	clearedblob              bool
 	done                     bool
 	oldValue                 func(context.Context) (*ObjectVersion, error)
 	predicates               []predicate.ObjectVersion
@@ -2041,12 +2412,12 @@ func (m *ObjectVersionMutation) ResetUpdatedAt() {
 
 // SetObjectID sets the "object_id" field.
 func (m *ObjectVersionMutation) SetObjectID(s string) {
-	m.object_id = &s
+	m.object = &s
 }
 
 // ObjectID returns the value of the "object_id" field in the mutation.
 func (m *ObjectVersionMutation) ObjectID() (r string, exists bool) {
-	v := m.object_id
+	v := m.object
 	if v == nil {
 		return
 	}
@@ -2072,17 +2443,17 @@ func (m *ObjectVersionMutation) OldObjectID(ctx context.Context) (v string, err 
 
 // ResetObjectID resets all changes to the "object_id" field.
 func (m *ObjectVersionMutation) ResetObjectID() {
-	m.object_id = nil
+	m.object = nil
 }
 
 // SetBlobID sets the "blob_id" field.
 func (m *ObjectVersionMutation) SetBlobID(s string) {
-	m.blob_id = &s
+	m.blob = &s
 }
 
 // BlobID returns the value of the "blob_id" field in the mutation.
 func (m *ObjectVersionMutation) BlobID() (r string, exists bool) {
-	v := m.blob_id
+	v := m.blob
 	if v == nil {
 		return
 	}
@@ -2108,7 +2479,7 @@ func (m *ObjectVersionMutation) OldBlobID(ctx context.Context) (v string, err er
 
 // ResetBlobID resets all changes to the "blob_id" field.
 func (m *ObjectVersionMutation) ResetBlobID() {
-	m.blob_id = nil
+	m.blob = nil
 }
 
 // SetRestoredFromVersionID sets the "restored_from_version_id" field.
@@ -2196,6 +2567,60 @@ func (m *ObjectVersionMutation) ResetCapturedAt() {
 	m.captured_at = nil
 }
 
+// ClearObject clears the "object" edge to the Object entity.
+func (m *ObjectVersionMutation) ClearObject() {
+	m.clearedobject = true
+	m.clearedFields[objectversion.FieldObjectID] = struct{}{}
+}
+
+// ObjectCleared reports if the "object" edge to the Object entity was cleared.
+func (m *ObjectVersionMutation) ObjectCleared() bool {
+	return m.clearedobject
+}
+
+// ObjectIDs returns the "object" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ObjectID instead. It exists only for internal usage by the builders.
+func (m *ObjectVersionMutation) ObjectIDs() (ids []string) {
+	if id := m.object; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetObject resets all changes to the "object" edge.
+func (m *ObjectVersionMutation) ResetObject() {
+	m.object = nil
+	m.clearedobject = false
+}
+
+// ClearBlob clears the "blob" edge to the Blob entity.
+func (m *ObjectVersionMutation) ClearBlob() {
+	m.clearedblob = true
+	m.clearedFields[objectversion.FieldBlobID] = struct{}{}
+}
+
+// BlobCleared reports if the "blob" edge to the Blob entity was cleared.
+func (m *ObjectVersionMutation) BlobCleared() bool {
+	return m.clearedblob
+}
+
+// BlobIDs returns the "blob" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// BlobID instead. It exists only for internal usage by the builders.
+func (m *ObjectVersionMutation) BlobIDs() (ids []string) {
+	if id := m.blob; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetBlob resets all changes to the "blob" edge.
+func (m *ObjectVersionMutation) ResetBlob() {
+	m.blob = nil
+	m.clearedblob = false
+}
+
 // Where appends a list predicates to the ObjectVersionMutation builder.
 func (m *ObjectVersionMutation) Where(ps ...predicate.ObjectVersion) {
 	m.predicates = append(m.predicates, ps...)
@@ -2237,10 +2662,10 @@ func (m *ObjectVersionMutation) Fields() []string {
 	if m.updated_at != nil {
 		fields = append(fields, objectversion.FieldUpdatedAt)
 	}
-	if m.object_id != nil {
+	if m.object != nil {
 		fields = append(fields, objectversion.FieldObjectID)
 	}
-	if m.blob_id != nil {
+	if m.blob != nil {
 		fields = append(fields, objectversion.FieldBlobID)
 	}
 	if m.restored_from_version_id != nil {
@@ -2423,19 +2848,35 @@ func (m *ObjectVersionMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ObjectVersionMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 2)
+	if m.object != nil {
+		edges = append(edges, objectversion.EdgeObject)
+	}
+	if m.blob != nil {
+		edges = append(edges, objectversion.EdgeBlob)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *ObjectVersionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case objectversion.EdgeObject:
+		if id := m.object; id != nil {
+			return []ent.Value{*id}
+		}
+	case objectversion.EdgeBlob:
+		if id := m.blob; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ObjectVersionMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -2447,43 +2888,74 @@ func (m *ObjectVersionMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ObjectVersionMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 2)
+	if m.clearedobject {
+		edges = append(edges, objectversion.EdgeObject)
+	}
+	if m.clearedblob {
+		edges = append(edges, objectversion.EdgeBlob)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *ObjectVersionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case objectversion.EdgeObject:
+		return m.clearedobject
+	case objectversion.EdgeBlob:
+		return m.clearedblob
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *ObjectVersionMutation) ClearEdge(name string) error {
+	switch name {
+	case objectversion.EdgeObject:
+		m.ClearObject()
+		return nil
+	case objectversion.EdgeBlob:
+		m.ClearBlob()
+		return nil
+	}
 	return fmt.Errorf("unknown ObjectVersion unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *ObjectVersionMutation) ResetEdge(name string) error {
+	switch name {
+	case objectversion.EdgeObject:
+		m.ResetObject()
+		return nil
+	case objectversion.EdgeBlob:
+		m.ResetBlob()
+		return nil
+	}
 	return fmt.Errorf("unknown ObjectVersion edge %s", name)
 }
 
 // SourceMutation represents an operation that mutates the Source nodes in the graph.
 type SourceMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *string
-	created_at    *time.Time
-	updated_at    *time.Time
-	kind          *string
-	account_email *string
-	status        *string
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*Source, error)
-	predicates    []predicate.Source
+	op             Op
+	typ            string
+	id             *string
+	created_at     *time.Time
+	updated_at     *time.Time
+	kind           *string
+	account_email  *string
+	status         *string
+	clearedFields  map[string]struct{}
+	objects        map[string]struct{}
+	removedobjects map[string]struct{}
+	clearedobjects bool
+	done           bool
+	oldValue       func(context.Context) (*Source, error)
+	predicates     []predicate.Source
 }
 
 var _ ent.Mutation = (*SourceMutation)(nil)
@@ -2770,6 +3242,60 @@ func (m *SourceMutation) ResetStatus() {
 	m.status = nil
 }
 
+// AddObjectIDs adds the "objects" edge to the Object entity by ids.
+func (m *SourceMutation) AddObjectIDs(ids ...string) {
+	if m.objects == nil {
+		m.objects = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.objects[ids[i]] = struct{}{}
+	}
+}
+
+// ClearObjects clears the "objects" edge to the Object entity.
+func (m *SourceMutation) ClearObjects() {
+	m.clearedobjects = true
+}
+
+// ObjectsCleared reports if the "objects" edge to the Object entity was cleared.
+func (m *SourceMutation) ObjectsCleared() bool {
+	return m.clearedobjects
+}
+
+// RemoveObjectIDs removes the "objects" edge to the Object entity by IDs.
+func (m *SourceMutation) RemoveObjectIDs(ids ...string) {
+	if m.removedobjects == nil {
+		m.removedobjects = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.objects, ids[i])
+		m.removedobjects[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedObjects returns the removed IDs of the "objects" edge to the Object entity.
+func (m *SourceMutation) RemovedObjectsIDs() (ids []string) {
+	for id := range m.removedobjects {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ObjectsIDs returns the "objects" edge IDs in the mutation.
+func (m *SourceMutation) ObjectsIDs() (ids []string) {
+	for id := range m.objects {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetObjects resets all changes to the "objects" edge.
+func (m *SourceMutation) ResetObjects() {
+	m.objects = nil
+	m.clearedobjects = false
+	m.removedobjects = nil
+}
+
 // Where appends a list predicates to the SourceMutation builder.
 func (m *SourceMutation) Where(ps ...predicate.Source) {
 	m.predicates = append(m.predicates, ps...)
@@ -2971,48 +3497,84 @@ func (m *SourceMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *SourceMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.objects != nil {
+		edges = append(edges, source.EdgeObjects)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *SourceMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case source.EdgeObjects:
+		ids := make([]ent.Value, 0, len(m.objects))
+		for id := range m.objects {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *SourceMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.removedobjects != nil {
+		edges = append(edges, source.EdgeObjects)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *SourceMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case source.EdgeObjects:
+		ids := make([]ent.Value, 0, len(m.removedobjects))
+		for id := range m.removedobjects {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *SourceMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedobjects {
+		edges = append(edges, source.EdgeObjects)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *SourceMutation) EdgeCleared(name string) bool {
+	switch name {
+	case source.EdgeObjects:
+		return m.clearedobjects
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *SourceMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Source unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *SourceMutation) ResetEdge(name string) error {
+	switch name {
+	case source.EdgeObjects:
+		m.ResetObjects()
+		return nil
+	}
 	return fmt.Errorf("unknown Source edge %s", name)
 }

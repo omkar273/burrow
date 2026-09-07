@@ -12,6 +12,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/omkar273/burrow/packages/engine/ent/object"
+	"github.com/omkar273/burrow/packages/engine/ent/objectalias"
+	"github.com/omkar273/burrow/packages/engine/ent/objectversion"
 	"github.com/omkar273/burrow/packages/engine/ent/predicate"
 )
 
@@ -82,9 +84,81 @@ func (_u *ObjectUpdate) ClearDeletedAtSource() *ObjectUpdate {
 	return _u
 }
 
+// AddAliasIDs adds the "aliases" edge to the ObjectAlias entity by IDs.
+func (_u *ObjectUpdate) AddAliasIDs(ids ...string) *ObjectUpdate {
+	_u.mutation.AddAliasIDs(ids...)
+	return _u
+}
+
+// AddAliases adds the "aliases" edges to the ObjectAlias entity.
+func (_u *ObjectUpdate) AddAliases(v ...*ObjectAlias) *ObjectUpdate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAliasIDs(ids...)
+}
+
+// AddVersionIDs adds the "versions" edge to the ObjectVersion entity by IDs.
+func (_u *ObjectUpdate) AddVersionIDs(ids ...string) *ObjectUpdate {
+	_u.mutation.AddVersionIDs(ids...)
+	return _u
+}
+
+// AddVersions adds the "versions" edges to the ObjectVersion entity.
+func (_u *ObjectUpdate) AddVersions(v ...*ObjectVersion) *ObjectUpdate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddVersionIDs(ids...)
+}
+
 // Mutation returns the ObjectMutation object of the builder.
 func (_u *ObjectUpdate) Mutation() *ObjectMutation {
 	return _u.mutation
+}
+
+// ClearAliases clears all "aliases" edges to the ObjectAlias entity.
+func (_u *ObjectUpdate) ClearAliases() *ObjectUpdate {
+	_u.mutation.ClearAliases()
+	return _u
+}
+
+// RemoveAliasIDs removes the "aliases" edge to ObjectAlias entities by IDs.
+func (_u *ObjectUpdate) RemoveAliasIDs(ids ...string) *ObjectUpdate {
+	_u.mutation.RemoveAliasIDs(ids...)
+	return _u
+}
+
+// RemoveAliases removes "aliases" edges to ObjectAlias entities.
+func (_u *ObjectUpdate) RemoveAliases(v ...*ObjectAlias) *ObjectUpdate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAliasIDs(ids...)
+}
+
+// ClearVersions clears all "versions" edges to the ObjectVersion entity.
+func (_u *ObjectUpdate) ClearVersions() *ObjectUpdate {
+	_u.mutation.ClearVersions()
+	return _u
+}
+
+// RemoveVersionIDs removes the "versions" edge to ObjectVersion entities by IDs.
+func (_u *ObjectUpdate) RemoveVersionIDs(ids ...string) *ObjectUpdate {
+	_u.mutation.RemoveVersionIDs(ids...)
+	return _u
+}
+
+// RemoveVersions removes "versions" edges to ObjectVersion entities.
+func (_u *ObjectUpdate) RemoveVersions(v ...*ObjectVersion) *ObjectUpdate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveVersionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -123,7 +197,18 @@ func (_u *ObjectUpdate) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *ObjectUpdate) check() error {
+	if _u.mutation.SourceCleared() && len(_u.mutation.SourceIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Object.source"`)
+	}
+	return nil
+}
+
 func (_u *ObjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(object.Table, object.Columns, sqlgraph.NewFieldSpec(object.FieldID, field.TypeString))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -146,6 +231,96 @@ func (_u *ObjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.DeletedAtSourceCleared() {
 		_spec.ClearField(object.FieldDeletedAtSource, field.TypeTime)
+	}
+	if _u.mutation.AliasesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   object.AliasesTable,
+			Columns: []string{object.AliasesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(objectalias.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAliasesIDs(); len(nodes) > 0 && !_u.mutation.AliasesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   object.AliasesTable,
+			Columns: []string{object.AliasesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(objectalias.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AliasesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   object.AliasesTable,
+			Columns: []string{object.AliasesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(objectalias.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.VersionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   object.VersionsTable,
+			Columns: []string{object.VersionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(objectversion.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedVersionsIDs(); len(nodes) > 0 && !_u.mutation.VersionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   object.VersionsTable,
+			Columns: []string{object.VersionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(objectversion.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.VersionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   object.VersionsTable,
+			Columns: []string{object.VersionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(objectversion.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -221,9 +396,81 @@ func (_u *ObjectUpdateOne) ClearDeletedAtSource() *ObjectUpdateOne {
 	return _u
 }
 
+// AddAliasIDs adds the "aliases" edge to the ObjectAlias entity by IDs.
+func (_u *ObjectUpdateOne) AddAliasIDs(ids ...string) *ObjectUpdateOne {
+	_u.mutation.AddAliasIDs(ids...)
+	return _u
+}
+
+// AddAliases adds the "aliases" edges to the ObjectAlias entity.
+func (_u *ObjectUpdateOne) AddAliases(v ...*ObjectAlias) *ObjectUpdateOne {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAliasIDs(ids...)
+}
+
+// AddVersionIDs adds the "versions" edge to the ObjectVersion entity by IDs.
+func (_u *ObjectUpdateOne) AddVersionIDs(ids ...string) *ObjectUpdateOne {
+	_u.mutation.AddVersionIDs(ids...)
+	return _u
+}
+
+// AddVersions adds the "versions" edges to the ObjectVersion entity.
+func (_u *ObjectUpdateOne) AddVersions(v ...*ObjectVersion) *ObjectUpdateOne {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddVersionIDs(ids...)
+}
+
 // Mutation returns the ObjectMutation object of the builder.
 func (_u *ObjectUpdateOne) Mutation() *ObjectMutation {
 	return _u.mutation
+}
+
+// ClearAliases clears all "aliases" edges to the ObjectAlias entity.
+func (_u *ObjectUpdateOne) ClearAliases() *ObjectUpdateOne {
+	_u.mutation.ClearAliases()
+	return _u
+}
+
+// RemoveAliasIDs removes the "aliases" edge to ObjectAlias entities by IDs.
+func (_u *ObjectUpdateOne) RemoveAliasIDs(ids ...string) *ObjectUpdateOne {
+	_u.mutation.RemoveAliasIDs(ids...)
+	return _u
+}
+
+// RemoveAliases removes "aliases" edges to ObjectAlias entities.
+func (_u *ObjectUpdateOne) RemoveAliases(v ...*ObjectAlias) *ObjectUpdateOne {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAliasIDs(ids...)
+}
+
+// ClearVersions clears all "versions" edges to the ObjectVersion entity.
+func (_u *ObjectUpdateOne) ClearVersions() *ObjectUpdateOne {
+	_u.mutation.ClearVersions()
+	return _u
+}
+
+// RemoveVersionIDs removes the "versions" edge to ObjectVersion entities by IDs.
+func (_u *ObjectUpdateOne) RemoveVersionIDs(ids ...string) *ObjectUpdateOne {
+	_u.mutation.RemoveVersionIDs(ids...)
+	return _u
+}
+
+// RemoveVersions removes "versions" edges to ObjectVersion entities.
+func (_u *ObjectUpdateOne) RemoveVersions(v ...*ObjectVersion) *ObjectUpdateOne {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveVersionIDs(ids...)
 }
 
 // Where appends a list predicates to the ObjectUpdate builder.
@@ -275,7 +522,18 @@ func (_u *ObjectUpdateOne) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *ObjectUpdateOne) check() error {
+	if _u.mutation.SourceCleared() && len(_u.mutation.SourceIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Object.source"`)
+	}
+	return nil
+}
+
 func (_u *ObjectUpdateOne) sqlSave(ctx context.Context) (_node *Object, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(object.Table, object.Columns, sqlgraph.NewFieldSpec(object.FieldID, field.TypeString))
 	id, ok := _u.mutation.ID()
 	if !ok {
@@ -315,6 +573,96 @@ func (_u *ObjectUpdateOne) sqlSave(ctx context.Context) (_node *Object, err erro
 	}
 	if _u.mutation.DeletedAtSourceCleared() {
 		_spec.ClearField(object.FieldDeletedAtSource, field.TypeTime)
+	}
+	if _u.mutation.AliasesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   object.AliasesTable,
+			Columns: []string{object.AliasesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(objectalias.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAliasesIDs(); len(nodes) > 0 && !_u.mutation.AliasesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   object.AliasesTable,
+			Columns: []string{object.AliasesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(objectalias.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AliasesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   object.AliasesTable,
+			Columns: []string{object.AliasesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(objectalias.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.VersionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   object.VersionsTable,
+			Columns: []string{object.VersionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(objectversion.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedVersionsIDs(); len(nodes) > 0 && !_u.mutation.VersionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   object.VersionsTable,
+			Columns: []string{object.VersionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(objectversion.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.VersionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   object.VersionsTable,
+			Columns: []string{object.VersionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(objectversion.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Object{config: _u.config}
 	_spec.Assign = _node.assignValues

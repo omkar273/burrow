@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/omkar273/burrow/packages/engine/ent/blob"
 	"github.com/omkar273/burrow/packages/engine/ent/object"
 	"github.com/omkar273/burrow/packages/engine/ent/objectalias"
@@ -344,6 +345,22 @@ func (c *BlobClient) GetX(ctx context.Context, id string) *Blob {
 	return obj
 }
 
+// QueryVersions queries the versions edge of a Blob.
+func (c *BlobClient) QueryVersions(_m *Blob) *ObjectVersionQuery {
+	query := (&ObjectVersionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(blob.Table, blob.FieldID, id),
+			sqlgraph.To(objectversion.Table, objectversion.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, blob.VersionsTable, blob.VersionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *BlobClient) Hooks() []Hook {
 	return c.hooks.Blob
@@ -475,6 +492,54 @@ func (c *ObjectClient) GetX(ctx context.Context, id string) *Object {
 		panic(err)
 	}
 	return obj
+}
+
+// QuerySource queries the source edge of a Object.
+func (c *ObjectClient) QuerySource(_m *Object) *SourceQuery {
+	query := (&SourceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(object.Table, object.FieldID, id),
+			sqlgraph.To(source.Table, source.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, object.SourceTable, object.SourceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAliases queries the aliases edge of a Object.
+func (c *ObjectClient) QueryAliases(_m *Object) *ObjectAliasQuery {
+	query := (&ObjectAliasClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(object.Table, object.FieldID, id),
+			sqlgraph.To(objectalias.Table, objectalias.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, object.AliasesTable, object.AliasesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryVersions queries the versions edge of a Object.
+func (c *ObjectClient) QueryVersions(_m *Object) *ObjectVersionQuery {
+	query := (&ObjectVersionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(object.Table, object.FieldID, id),
+			sqlgraph.To(objectversion.Table, objectversion.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, object.VersionsTable, object.VersionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.
@@ -610,6 +675,22 @@ func (c *ObjectAliasClient) GetX(ctx context.Context, id string) *ObjectAlias {
 	return obj
 }
 
+// QueryObject queries the object edge of a ObjectAlias.
+func (c *ObjectAliasClient) QueryObject(_m *ObjectAlias) *ObjectQuery {
+	query := (&ObjectClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(objectalias.Table, objectalias.FieldID, id),
+			sqlgraph.To(object.Table, object.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, objectalias.ObjectTable, objectalias.ObjectColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ObjectAliasClient) Hooks() []Hook {
 	return c.hooks.ObjectAlias
@@ -743,6 +824,38 @@ func (c *ObjectVersionClient) GetX(ctx context.Context, id string) *ObjectVersio
 	return obj
 }
 
+// QueryObject queries the object edge of a ObjectVersion.
+func (c *ObjectVersionClient) QueryObject(_m *ObjectVersion) *ObjectQuery {
+	query := (&ObjectClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(objectversion.Table, objectversion.FieldID, id),
+			sqlgraph.To(object.Table, object.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, objectversion.ObjectTable, objectversion.ObjectColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBlob queries the blob edge of a ObjectVersion.
+func (c *ObjectVersionClient) QueryBlob(_m *ObjectVersion) *BlobQuery {
+	query := (&BlobClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(objectversion.Table, objectversion.FieldID, id),
+			sqlgraph.To(blob.Table, blob.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, objectversion.BlobTable, objectversion.BlobColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ObjectVersionClient) Hooks() []Hook {
 	return c.hooks.ObjectVersion
@@ -874,6 +987,22 @@ func (c *SourceClient) GetX(ctx context.Context, id string) *Source {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryObjects queries the objects edge of a Source.
+func (c *SourceClient) QueryObjects(_m *Source) *ObjectQuery {
+	query := (&ObjectClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(source.Table, source.FieldID, id),
+			sqlgraph.To(object.Table, object.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, source.ObjectsTable, source.ObjectsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.
