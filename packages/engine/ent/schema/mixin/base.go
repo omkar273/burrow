@@ -9,9 +9,6 @@ import (
 	entmixin "entgo.io/ent/schema/mixin"
 )
 
-// Deliberately just timestamps: no TenantID, CreatedBy, or soft-delete
-// Status. Those are multi-tenant SaaS concerns, and deletion needs its own
-// semantics here — deleted-at-source is not deleted-from-archive.
 type BaseMixin struct {
 	entmixin.Schema
 }
