@@ -36,6 +36,13 @@ lint: ## Lint
 
 check: lint test ## Lint then test
 
+.PHONY: migrate migrate-dry-run
+migrate: ## Apply pending schema migrations (PROFILE=<name>)
+	go run ./apps/migrate $(if $(PROFILE),--profile $(PROFILE),)
+
+migrate-dry-run: ## Print pending migration statements without applying
+	go run ./apps/migrate --dry-run $(if $(PROFILE),--profile $(PROFILE),)
+
 .PHONY: generate-ent generate-migration
 generate-ent: ## Regenerate ent code from ent/schema
 	go run -mod=mod entgo.io/ent/cmd/ent generate ./packages/engine/ent/schema

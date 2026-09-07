@@ -65,3 +65,11 @@ func (c *Client) Close() error { return c.db.Close() }
 func (c *Client) Migrate(ctx context.Context) error {
 	return applyVersioned(ctx, c.db)
 }
+
+func (c *Client) ListPending(ctx context.Context) ([]Pending, error) {
+	return ListPending(ctx, c.db)
+}
+
+func (c *Client) ApplyPending(ctx context.Context) ([]string, error) {
+	return ApplyPending(ctx, c.db)
+}
