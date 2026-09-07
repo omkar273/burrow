@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="200" viewBox="0 0 720 200" role="img" aria-label="Business data lives in SaaS; the independent copy is missing">
-  <rect width="720" height="200" fill="#F7EFE7"/>
+  <rect width="720" height="200" rx="28" ry="28" fill="#F7EFE7"/>
   <g font-family="ui-sans-serif, system-ui, sans-serif" text-anchor="middle">
     <g fill="#fff" stroke="#D9B895">
-      <rect x="24" y="16" width="150" height="52" rx="14"/>
-      <rect x="198" y="16" width="150" height="52" rx="14"/>
-      <rect x="372" y="16" width="150" height="52" rx="14"/>
-      <rect x="546" y="16" width="150" height="52" rx="14"/>
+      <rect x="24" y="16" width="150" height="52" rx="18"/>
+      <rect x="198" y="16" width="150" height="52" rx="18"/>
+      <rect x="372" y="16" width="150" height="52" rx="18"/>
+      <rect x="546" y="16" width="150" height="52" rx="18"/>
     </g>
     <g font-size="15" fill="#2E1F1A">
       <text x="99" y="48">Gmail</text>

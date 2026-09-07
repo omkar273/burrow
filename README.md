@@ -2,7 +2,7 @@
 > The first recovery loop is **not shipped**. This README is the product thesis and the build. Nothing here is installable yet.
 
 <p align="center">
-  <img src="logo.png" width="88" alt="Burrow mascot" />
+  <img src="docs/assets/burrow-hero.webp" width="920" alt="Mascot beside a burrow as mail, files, and records arrive" />
 </p>
 
 <h1 align="center">Burrow</h1>
@@ -29,10 +29,6 @@
 </p>
 
 <p align="center">Open source · Self-hostable · Cloud-optional</p>
-
-<p align="center">
-  <img src="docs/assets/burrow-hero.png" width="920" alt="Mascot beside a burrow as mail, files, and records arrive" />
-</p>
 
 ---
 
@@ -84,7 +80,7 @@ If Gmail is how the company runs, Gmail is a single point of failure. Burrow exi
 ## How it works
 
 <p align="center">
-  <img src="docs/assets/burrow-meet.png" width="920" alt="Scattered sources flow into Burrow, then out to three kinds of storage you control" />
+  <img src="docs/assets/burrow-meet.webp" width="920" alt="Scattered sources flow into Burrow, then out to three kinds of storage you control" />
 </p>
 
 <p align="center"><strong>Burrow gives your data another home.</strong></p>
@@ -141,7 +137,7 @@ Leave with the archive. Secrets stay out of the plaintext dump.
 </details>
 
 <p align="center">
-  <img src="docs/assets/burrow-storage.png" width="920" alt="Mascot standing among three burrow openings — local, object storage, NAS" />
+  <img src="docs/assets/burrow-storage.webp" width="920" alt="Mascot standing among three burrow openings — local, object storage, NAS" />
 </p>
 
 ```text
@@ -157,7 +153,7 @@ Bring your own storage. Keep it portable. Leave whenever you want. Burrow should
 The first runtime is a **local process** on a machine you already have (laptop, Mini, NAS box). SQLite + disk. Docker, object storage, and a hosted cloud come after the Gmail loop actually restores a message. There is no compose file to copy yet.
 
 <p align="center">
-  <img src="docs/assets/burrow-recovery.png" width="720" alt="Mascot bringing a recovered object from the burrow onto a device you control" />
+  <img src="docs/assets/burrow-recovery.webp" width="720" alt="Mascot bringing a recovered object from the burrow onto a device you control" />
 </p>
 
 <p align="center">
@@ -280,7 +276,7 @@ Open an issue before large design changes. There is no `CONTRIBUTING.md` yet —
 If you find a security issue, do not file a public GitHub issue. There is no `security@` yet; open a private advisory on the repo when the remote exists, or wait until a contact is published.
 
 <p align="center">
-  <img src="docs/assets/mascot.png" width="72" alt="" />
+  <img src="docs/assets/mascot.webp" width="72" alt="" />
 </p>
 
 <p align="center"><strong>Burrow</strong><br/>Your SaaS data. Your copy.</p>

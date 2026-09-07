@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="640" height="120" viewBox="0 0 640 120" role="img" aria-label="Synced, verified, recoverable">
-  <rect width="640" height="120" fill="#F7EFE7"/>
+  <rect width="640" height="120" rx="28" ry="28" fill="#F7EFE7"/>
   <g font-family="ui-sans-serif, system-ui, sans-serif" text-anchor="middle">
-    <rect x="16" y="20" width="192" height="80" rx="16" fill="#fff" stroke="#D9B895"/>
+    <rect x="16" y="20" width="192" height="80" rx="22" fill="#fff" stroke="#D9B895"/>
     <text x="112" y="52" font-size="11" letter-spacing="2" fill="#8B5E3C">SYNCED</text>
     <path d="M102 72 l7 7 14-16" fill="none" stroke="#6BA67A" stroke-width="3" stroke-linecap="round"/>
 
-    <rect x="224" y="20" width="192" height="80" rx="16" fill="#fff" stroke="#D9B895"/>
+    <rect x="224" y="20" width="192" height="80" rx="22" fill="#fff" stroke="#D9B895"/>
     <text x="320" y="52" font-size="11" letter-spacing="2" fill="#8B5E3C">VERIFIED</text>
     <path d="M310 72 l7 7 14-16" fill="none" stroke="#6BA67A" stroke-width="3" stroke-linecap="round"/>
 
-    <rect x="432" y="20" width="192" height="80" rx="16" fill="#fff" stroke="#2E1F1A" stroke-width="1.5"/>
+    <rect x="432" y="20" width="192" height="80" rx="22" fill="#fff" stroke="#2E1F1A" stroke-width="1.5"/>
     <text x="528" y="52" font-size="11" letter-spacing="2" fill="#8B5E3C">RECOVERABLE</text>
     <path d="M518 72 l7 7 14-16" fill="none" stroke="#6BA67A" stroke-width="3" stroke-linecap="round"/>
   </g>

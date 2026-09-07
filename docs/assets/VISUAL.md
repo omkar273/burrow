@@ -2,18 +2,21 @@
 
 Palette: `#2E1F1A` `#8B5E3C` `#D9B895` `#F7EFE7` `#6BA67A`
 
+Published rasters are WebP, max ~1280px wide, rounded frames (`rx` ≈ 60 on 1280). Diagrams stay SVG with rounded canvases (`rx="28"`). GitHub Open Graph stays PNG.
+
 ## Published
 
-README rasters are character-only. Labels live in Markdown or SVG.
+README rasters are character-only. Labels live in Markdown or SVG. The README opens on `burrow-hero.webp`, not the mark.
 
 | File | Role |
 | --- | --- |
-| `logo.png` (repo root) + `mascot.png` | GitHub avatar / footer |
-| `burrow-hero.png` | Hero scene |
-| `burrow-problem.png` | Scattered sources |
-| `burrow-meet.png` | Sources → Burrow → your storage |
-| `burrow-storage.png` | Three homes |
-| `burrow-recovery.png` | Retrieving a copy onto a device |
+| `logo.png` (repo root) | GitHub avatar / org mark |
+| `mascot.webp` | Footer |
+| `burrow-hero.webp` | README opener |
+| `burrow-problem.webp` | Scattered sources (optional) |
+| `burrow-meet.webp` | Sources → Burrow → your storage |
+| `burrow-storage.webp` | Three homes |
+| `burrow-recovery.webp` | Retrieving a copy onto a device |
 | `social-preview.png` | GitHub Open Graph (wordmark allowed) |
 | `sources.svg` | Problem labels |
 | `aha.svg` | Access ≠ sync ≠ recovery |
@@ -27,7 +30,7 @@ No shields, locks, vendor marks, or database cylinders in artwork. No product co
 
 ## Explorations (`brand/explorations/`)
 
-Landing composites and diagrams with vendor marks or baked-in copy. Do not embed in the README.
+Landing composites and diagrams with vendor marks or baked-in copy. Do not embed in the README. These remain PNG sources.
 
 | File | What it is |
 | --- | --- |
@@ -43,5 +46,5 @@ Landing composites and diagrams with vendor marks or baked-in copy. Do not embed
 | `ownership-cutaway.png` | Hill cutaway with three storage paths |
 | `ownership-landscape.png` | Landscape ownership scene |
 | `loop-storyboard.png` | Six-step connect → export comic |
-| `recovery-to-device.png` | Source for published `burrow-recovery.png` |
+| `recovery-to-device.png` | Source for published `burrow-recovery.webp` |
 | `verify-checklist.png` | Checklist + shield (not README) |

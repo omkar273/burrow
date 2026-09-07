@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="168" viewBox="0 0 760 168" role="img" aria-label="Keep, house, verify, find, recover">
-  <rect width="760" height="168" fill="#F7EFE7"/>
+  <rect width="760" height="168" rx="28" ry="28" fill="#F7EFE7"/>
   <g font-family="ui-sans-serif, system-ui, sans-serif" text-anchor="middle">
     <g>
       <rect x="8" y="10" width="140" height="148" rx="18" fill="#fff" stroke="#D9B895"/>

@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="120" viewBox="0 0 760 120" role="img" aria-label="Connect, copy, verify, search, recover, export">
-  <rect width="760" height="120" fill="#F7EFE7"/>
+  <rect width="760" height="120" rx="28" ry="28" fill="#F7EFE7"/>
   <g font-family="ui-sans-serif, system-ui, sans-serif" text-anchor="middle">
     <path d="M70 48 H690" fill="none" stroke="#D9B895" stroke-width="2"/>
     <g font-size="11" letter-spacing="1.5" fill="#2E1F1A">
