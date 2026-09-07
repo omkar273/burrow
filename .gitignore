@@ -16,3 +16,7 @@ dist/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Go
+/burrowd
+*.test

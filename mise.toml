@@ -8,6 +8,7 @@ lockfile = true
 
 [tools]
 bun = "1"
+go = "1.25"
 
 [env]
 # Project-local; does not leak into the product binary.
@@ -27,8 +28,17 @@ run = "bun run dev"
 
 [tasks.test]
 description = "Run tests"
-run = "bun test"
+run = [
+  "go test ./...",
+  # bun test errors out when no test files exist. apps/web is not
+  # scaffolded yet; say so rather than silently passing.
+  "if [ -d apps/web ]; then bun test; else echo 'skip: apps/web not scaffolded, no bun tests to run'; fi",
+]
 
 [tasks.lint]
 description = "Lint"
-run = "bun run lint"
+run = [
+  "go vet ./...",
+  # gofmt -l exits 0 even when it lists files; fail explicitly.
+  "test -z \"$(gofmt -l .)\" || { gofmt -l .; echo 'unformatted files above'; exit 1; }",
+]
