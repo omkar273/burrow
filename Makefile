@@ -43,6 +43,10 @@ migrate: ## Apply pending schema migrations (PROFILE=<name>)
 migrate-dry-run: ## Print pending migration statements without applying
 	@$(MISE) exec -- go run ./packages/engine/cmd/migrate --dry-run $(if $(PROFILE),--profile $(PROFILE),)
 
+.PHONY: burrow-paths
+burrow-paths: ## Print the active profile's paths
+	@$(MISE) exec -- go run ./packages/engine/cmd/burrow
+
 .PHONY: clean clean-archive
 clean: ## Remove build artifacts and dry-run dumps from the repo
 	@rm -f burrow migrate ./*.sql
