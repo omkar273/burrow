@@ -45,8 +45,12 @@ make check              # lint then test
 make migrate            # apply pending schema migrations
 make migrate-dry-run    # print pending statements without applying
 make generate-ent       # regenerate ent code from packages/engine/ent/schema
-make generate-migration NAME=<name>
+make clean              # remove build artifacts and dry-run dumps
+make clean-archive      # DESTRUCTIVE: delete the local archive (needs CONFIRM=yes)
 ```
+
+Verifying against a real archive writes to `~/.burrow`, which is the user's
+data, not scratch space. Use a throwaway home instead: `HOME=$(mktemp -d) make migrate`.
 
 ## Layers (never violate)
 
