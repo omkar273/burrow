@@ -17,7 +17,7 @@ type txKey struct{}
 // nested BeginTx would block forever waiting for the connection the outer
 // transaction already holds. Reuse also gives the semantics a caller wants —
 // an inner failure rolls the whole unit back, not just its own part.
-func (c *Client) WithTx(ctx context.Context, fn func(context.Context) error) error {
+func (c *client) WithTx(ctx context.Context, fn func(context.Context) error) error {
 	if TxFromContext(ctx) != nil {
 		return fn(ctx)
 	}
@@ -55,10 +55,7 @@ func TxFromContext(ctx context.Context) *generated.Tx {
 	return tx
 }
 
-// Querier returns the transaction's client when ctx carries one, else the
-// plain client. Repositories use this so the same method works inside and
-// outside a transaction.
-func (c *Client) Querier(ctx context.Context) *generated.Client {
+func (c *client) Querier(ctx context.Context) *generated.Client {
 	if tx := TxFromContext(ctx); tx != nil {
 		return tx.Client()
 	}

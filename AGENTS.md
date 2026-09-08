@@ -12,6 +12,8 @@ Burrow is an independent copy of SaaS data on storage you control, that you can 
 
 **YAGNI.** Smallest change that satisfies the request. No extra connectors, packages, flags, or abstractions. No drive-by refactors. No microservices. Do not build a source because it appears in the README.
 
+**Interface, then implementation.** Every package that does something (not just holds data) exports an interface and returns it from its constructor — `NewFoo(...) Foo`, never the concrete type. The struct behind it is unexported (`fooService`, `objectRepository`, `client`, `store`) and callers depend on the interface only, so a second implementation or a test double drops in without touching a call site. `internal/service/`, `repository/ent/`, `internal/sqlite/` (`Client`), and `internal/storage/localfs/` (`storage.Store`) all follow this — match it for anything new anywhere in `packages/engine`.
+
 **Comments earn their place.** The next reader is a developer. Do not restate what the code already says — no `// Fields of the X`, no `// NewFoo returns a Foo`, no narrating a loop. Write a comment only when it carries what the code cannot: why a non-obvious choice was made, a constraint the compiler will not enforce, or a trap the next change could spring. If deleting a comment loses nothing, delete it.
 
 **Restore is the acceptance test.** A finished copy job is not done. If the change touches copy, verify, restore, or export, the test is that you got the object back.
@@ -59,9 +61,9 @@ data, not scratch space. Use a throwaway home instead: `HOME=$(mktemp -d) make m
 | Facade | `packages/engine/*.go` | The entire public surface. No `internal/` type in any signature. |
 | Domain | `packages/engine/internal/domain/` | Models and interfaces. Zero third-party imports. No network, no disk. |
 | Database | `packages/engine/internal/sqlite/` | Owns the handle, `WithTx`, and migrations. Nothing else opens a connection. |
-| Repository | `packages/engine/internal/repository/` | Implements domain interfaces. Generated `ent.*` types never escape it. Queries go through `Querier(ctx)`, never the client directly, so every method works inside a transaction. |
+| Repository | `packages/engine/internal/repository/` | `factory.go` is the wiring seam: callers depend on it, never on `repository/ent`. Implementations live in `repository/ent/`, where generated `ent.*` types never escape and queries go through `Querier(ctx)` so every method works inside a transaction. |
 | Adapters | `internal/source/`, `internal/storage/`, `internal/credential/` | Implement ports. Never call upward. |
-| Service | `packages/engine/internal/service/` | Use cases. Orchestrates repositories and adapters. |
+| Service | `packages/engine/internal/service/` | Use cases. Orchestrates repositories and adapters. Every service takes `service.ServiceParams` and nothing else, so a new dependency changes one struct rather than every constructor. |
 | Binaries | `packages/engine/cmd/burrow/`, `packages/engine/cmd/migrate/` | Consume the facade only. The compiler cannot block `internal/` here — `scripts/check-layers.sh` does. |
 
 - Migrations are versioned Atlas files. Never `Schema.Create` auto-migrate.

@@ -10,9 +10,9 @@ import (
 	sqlitedb "github.com/omkar273/burrow/packages/engine/internal/sqlite"
 )
 
-type blobRepository struct{ c *sqlitedb.Client }
+type blobRepository struct{ c sqlitedb.Client }
 
-func NewBlobRepository(c *sqlitedb.Client) blob.Repository { return &blobRepository{c: c} }
+func NewBlobRepository(c sqlitedb.Client) blob.Repository { return &blobRepository{c: c} }
 
 func blobFromEnt(b *generated.Blob) blob.Blob {
 	return blob.Blob{
