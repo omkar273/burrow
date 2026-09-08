@@ -176,7 +176,7 @@ func TestArchiveFromANewerBuildIsRefused(t *testing.T) {
 
 // openArchiveDB opens an already-migrated archive directly, so a test can
 // damage it the way a person with sqlite3 could.
-func openArchiveDB(t *testing.T, home string) *sqlitedb.Client {
+func openArchiveDB(t *testing.T, home string) sqlitedb.Client {
 	t.Helper()
 	c, err := sqlitedb.Open(sqlitedb.FileDSN(
 		filepath.Join(home, ".burrow", "profiles", "default", "state.db")))

@@ -33,7 +33,7 @@ var options = fx.Options(
 
 		// The sqlite client satisfies service.Txer. Naming it here keeps the
 		// service layer free of any concrete database type.
-		func(c *sqlitedb.Client) service.Txer { return c },
+		func(c sqlitedb.Client) service.Txer { return c },
 
 		// Use cases.
 		service.NewIngestService,
@@ -42,7 +42,7 @@ var options = fx.Options(
 
 	// Migrate on start, close on stop, ordered by fx against everything that
 	// depends on the database.
-	fx.Invoke(func(lc fx.Lifecycle, c *sqlitedb.Client) {
+	fx.Invoke(func(lc fx.Lifecycle, c sqlitedb.Client) {
 		lc.Append(fx.Hook{
 			OnStart: c.Migrate,
 			OnStop:  func(context.Context) error { return c.Close() },

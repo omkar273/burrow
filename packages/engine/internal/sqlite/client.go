@@ -5,6 +5,7 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"net/url"
 
@@ -16,7 +17,24 @@ import (
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
 )
 
-type Client struct {
+// Client is the state database: the handle, transactions, and migrations.
+type Client interface {
+	// Ent is exported for this package's own tests only. Nothing outside
+	// this package may use it: generated types must not escape.
+	Ent() *generated.Client
+	// Querier returns the transaction's client when ctx carries one, else
+	// the plain client. Repositories use this so the same method works
+	// inside and outside a transaction.
+	Querier(ctx context.Context) *generated.Client
+	WithTx(ctx context.Context, fn func(context.Context) error) error
+	DB() *sql.DB
+	Close() error
+	Migrate(ctx context.Context) error
+	PlanSQL(ctx context.Context) (string, error)
+	Version(ctx context.Context) (int, error)
+}
+
+type client struct {
 	db  *sql.DB
 	ent *generated.Client
 }
@@ -35,9 +53,9 @@ func FileDSN(path string) string {
 func DSN(p config.Profile) string { return FileDSN(p.StateDB) }
 
 // NewClient opens the state database for a profile.
-func NewClient(p config.Profile) (*Client, error) { return Open(DSN(p)) }
+func NewClient(p config.Profile) (Client, error) { return Open(DSN(p)) }
 
-func Open(dsn string) (*Client, error) {
+func Open(dsn string) (Client, error) {
 	db, err := sql.Open(DriverName, dsn)
 	if err != nil {
 		return nil, ierr.Wrap(err, "opening state database").Mark(ierr.ErrInternal)
@@ -53,16 +71,14 @@ func Open(dsn string) (*Client, error) {
 	}
 
 	drv := entsql.OpenDB(dialect.SQLite, db)
-	return &Client{db: db, ent: generated.NewClient(generated.Driver(drv))}, nil
+	return &client{db: db, ent: generated.NewClient(generated.Driver(drv))}, nil
 }
 
-// Ent is exported for this package's repositories only. Nothing outside
-// this package may use it: generated types must not escape.
-func (c *Client) Ent() *generated.Client { return c.ent }
+func (c *client) Ent() *generated.Client { return c.ent }
 
-func (c *Client) DB() *sql.DB { return c.db }
+func (c *client) DB() *sql.DB { return c.db }
 
-func (c *Client) Close() error { return c.db.Close() }
+func (c *client) Close() error { return c.db.Close() }
 
 // MemoryDSN is a throwaway in-memory database, used to compute a migration
 // plan without creating a real archive.

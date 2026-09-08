@@ -10,7 +10,7 @@ import (
 
 // A real SQLite file, not a mock: these tests exist to prove the schema
 // and the driver actually work.
-func openTestClient(t *testing.T) *sqlitedb.Client {
+func openTestClient(t *testing.T) sqlitedb.Client {
 	t.Helper()
 	dsn := sqlitedb.FileDSN(filepath.Join(t.TempDir(), "state.db"))
 	c, err := sqlitedb.Open(dsn)

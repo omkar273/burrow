@@ -14,9 +14,9 @@ import (
 	"github.com/omkar273/burrow/packages/engine/internal/types"
 )
 
-type objectRepository struct{ c *sqlitedb.Client }
+type objectRepository struct{ c sqlitedb.Client }
 
-func NewObjectRepository(c *sqlitedb.Client) object.Repository { return &objectRepository{c: c} }
+func NewObjectRepository(c sqlitedb.Client) object.Repository { return &objectRepository{c: c} }
 
 func objectFromEnt(o *generated.Object) object.Object {
 	return object.Object{

@@ -13,7 +13,7 @@ import (
 type FactoryParams struct {
 	fx.In
 
-	Client *sqlitedb.Client
+	Client sqlitedb.Client
 }
 
 func NewObjectRepository(p FactoryParams) object.Repository {

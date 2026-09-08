@@ -15,7 +15,7 @@ import (
 	"github.com/omkar273/burrow/packages/engine/internal/types"
 )
 
-func newSourceForTest(t *testing.T, c *sqlitedb.Client) string {
+func newSourceForTest(t *testing.T, c sqlitedb.Client) string {
 	t.Helper()
 	id := types.NewID(types.PrefixSource)
 	err := entrepo.NewSourceRepository(c).Create(context.Background(), source.Source{
@@ -28,7 +28,7 @@ func newSourceForTest(t *testing.T, c *sqlitedb.Client) string {
 	return id
 }
 
-func mustCreateBlob(t *testing.T, c *sqlitedb.Client, hash string, size int64) string {
+func mustCreateBlob(t *testing.T, c sqlitedb.Client, hash string, size int64) string {
 	t.Helper()
 	id := types.NewID(types.PrefixBlob)
 	if _, err := c.Ent().Blob.Create().

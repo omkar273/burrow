@@ -11,9 +11,9 @@ import (
 	sqlitedb "github.com/omkar273/burrow/packages/engine/internal/sqlite"
 )
 
-type sourceRepository struct{ c *sqlitedb.Client }
+type sourceRepository struct{ c sqlitedb.Client }
 
-func NewSourceRepository(c *sqlitedb.Client) source.Repository { return &sourceRepository{c: c} }
+func NewSourceRepository(c sqlitedb.Client) source.Repository { return &sourceRepository{c: c} }
 
 // sourceFromEnt converts a generated row to the domain struct. Generated
 // ent types must not escape this package.

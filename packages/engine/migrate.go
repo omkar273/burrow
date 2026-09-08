@@ -36,7 +36,7 @@ func MigrationPlan(ctx context.Context, cfg Config) (string, error) {
 		return scratch.PlanSQL(ctx)
 	}
 
-	return withMigrationDB(ctx, cfg, func(c *sqlitedb.Client) (string, error) {
+	return withMigrationDB(ctx, cfg, func(c sqlitedb.Client) (string, error) {
 		return c.PlanSQL(ctx)
 	})
 }
@@ -52,14 +52,14 @@ func SchemaVersion(ctx context.Context, cfg Config) (int, error) {
 	if _, statErr := os.Stat(profile.StateDB); errors.Is(statErr, fs.ErrNotExist) {
 		return 0, nil
 	}
-	return withMigrationDB(ctx, cfg, func(c *sqlitedb.Client) (int, error) {
+	return withMigrationDB(ctx, cfg, func(c sqlitedb.Client) (int, error) {
 		return c.Version(ctx)
 	})
 }
 
 // Migrate brings the archive up to this build's schema.
 func Migrate(ctx context.Context, cfg Config) error {
-	_, err := withMigrationDB(ctx, cfg, func(c *sqlitedb.Client) (struct{}, error) {
+	_, err := withMigrationDB(ctx, cfg, func(c sqlitedb.Client) (struct{}, error) {
 		return struct{}{}, c.Migrate(ctx)
 	})
 	return err
@@ -70,7 +70,7 @@ func Migrate(ctx context.Context, cfg Config) error {
 //
 // Migrating shares the profile lock deliberately: a running burrow against a
 // half-migrated schema is the failure this prevents.
-func withMigrationDB[T any](ctx context.Context, cfg Config, fn func(*sqlitedb.Client) (T, error)) (T, error) {
+func withMigrationDB[T any](ctx context.Context, cfg Config, fn func(sqlitedb.Client) (T, error)) (T, error) {
 	var zero T
 
 	profile, err := resolveProfile(cfg)
@@ -105,7 +105,7 @@ func withMigrationDB[T any](ctx context.Context, cfg Config, fn func(*sqlitedb.C
 // TableNames lists the archive's tables. Exists so a caller can confirm a dry
 // run changed nothing without reaching into internal packages.
 func TableNames(ctx context.Context, cfg Config) ([]string, error) {
-	return withMigrationDB(ctx, cfg, func(c *sqlitedb.Client) ([]string, error) {
+	return withMigrationDB(ctx, cfg, func(c sqlitedb.Client) ([]string, error) {
 		rows, err := c.DB().QueryContext(ctx,
 			`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name`)
 		if err != nil {
@@ -128,7 +128,7 @@ func TableNames(ctx context.Context, cfg Config) ([]string, error) {
 // SetSchemaVersionForTest forces the recorded schema version. It exists so
 // tests can simulate an archive written by a newer build.
 func SetSchemaVersionForTest(ctx context.Context, cfg Config, v int) error {
-	_, err := withMigrationDB(ctx, cfg, func(c *sqlitedb.Client) (struct{}, error) {
+	_, err := withMigrationDB(ctx, cfg, func(c sqlitedb.Client) (struct{}, error) {
 		_, err := c.DB().ExecContext(ctx, "PRAGMA user_version = "+strconv.Itoa(v)+";")
 		return struct{}{}, err
 	})

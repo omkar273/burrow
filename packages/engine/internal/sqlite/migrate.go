@@ -32,8 +32,8 @@ func migrateOptions() []entmigrate.MigrateOption {
 	}
 }
 
-// Version reports the schema version recorded in the database.
-func Version(ctx context.Context, c *Client) (int, error) {
+// schemaVersion reports the schema version recorded in the database.
+func schemaVersion(ctx context.Context, c *client) (int, error) {
 	var v int
 	if err := c.db.QueryRowContext(ctx, "PRAGMA user_version;").Scan(&v); err != nil {
 		return 0, ierr.Wrap(err, "reading schema version").Mark(ierr.ErrInternal)
@@ -43,7 +43,7 @@ func Version(ctx context.Context, c *Client) (int, error) {
 
 // PlanSQL returns the statements Migrate would run, without running them.
 // An empty string means the database already matches ent/schema.
-func (c *Client) PlanSQL(ctx context.Context) (string, error) {
+func (c *client) PlanSQL(ctx context.Context) (string, error) {
 	var buf bytes.Buffer
 	if err := c.ent.Schema.WriteTo(ctx, &buf, migrateOptions()...); err != nil {
 		return "", ierr.Wrap(err, "planning schema migration").Mark(ierr.ErrInternal)
@@ -52,8 +52,8 @@ func (c *Client) PlanSQL(ctx context.Context) (string, error) {
 }
 
 // Migrate brings the database up to ent/schema and records SchemaVersion.
-func (c *Client) Migrate(ctx context.Context) error {
-	recorded, err := Version(ctx, c)
+func (c *client) Migrate(ctx context.Context) error {
+	recorded, err := schemaVersion(ctx, c)
 	if err != nil {
 		return err
 	}
@@ -74,5 +74,5 @@ func (c *Client) Migrate(ctx context.Context) error {
 	return nil
 }
 
-// Version is the method form, for callers holding a Client.
-func (c *Client) Version(ctx context.Context) (int, error) { return Version(ctx, c) }
+// Version reports the schema version recorded in the database.
+func (c *client) Version(ctx context.Context) (int, error) { return schemaVersion(ctx, c) }

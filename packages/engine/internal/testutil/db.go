@@ -13,7 +13,7 @@ import (
 
 // OpenMigratedClient returns a migrated, empty state database in a temp
 // directory, closed when the test ends.
-func OpenMigratedClient(t *testing.T) *sqlitedb.Client {
+func OpenMigratedClient(t *testing.T) sqlitedb.Client {
 	t.Helper()
 	c, err := sqlitedb.Open(sqlitedb.FileDSN(filepath.Join(t.TempDir(), "state.db")))
 	if err != nil {
@@ -27,7 +27,7 @@ func OpenMigratedClient(t *testing.T) *sqlitedb.Client {
 }
 
 // SeedSource inserts one connected source and returns its ID.
-func SeedSource(t *testing.T, c *sqlitedb.Client, email string) string {
+func SeedSource(t *testing.T, c sqlitedb.Client, email string) string {
 	t.Helper()
 	id := types.NewID(types.PrefixSource)
 	err := entrepo.NewSourceRepository(c).Create(context.Background(), source.Source{

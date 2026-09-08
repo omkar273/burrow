@@ -47,7 +47,7 @@ type Paths struct {
 type Engine struct {
 	profile config.Profile
 	lock    *flock.Flock
-	state   *sqlitedb.Client
+	state   sqlitedb.Client
 	store   storage.Store
 
 	objects object.Repository
