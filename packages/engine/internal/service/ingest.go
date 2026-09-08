@@ -1,5 +1,3 @@
-// Package service holds the engine's use cases. It orchestrates repositories
-// and adapters; adapters never call upward into it.
 package service
 
 import (

@@ -1,9 +1,3 @@
-// Package repository is the wiring seam between the domain's repository
-// interfaces and their implementations.
-//
-// Callers depend on this package, never on `repository/ent`, so swapping the
-// persistence layer — Postgres when hosted, per the README — changes these
-// constructors and nothing else.
 package repository
 
 import (
@@ -16,7 +10,6 @@ import (
 	sqlitedb "github.com/omkar273/burrow/packages/engine/internal/sqlite"
 )
 
-// FactoryParams is what building a repository requires.
 type FactoryParams struct {
 	fx.In
 
