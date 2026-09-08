@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/omkar273/burrow/packages/engine/internal/config"
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
 	"github.com/omkar273/burrow/packages/engine/internal/storage"
 )
@@ -25,6 +26,9 @@ func New(root string) (storage.Store, error) {
 	}
 	return &store{root: root}, nil
 }
+
+// NewFromProfile stores blobs under a profile's object directory.
+func NewFromProfile(p config.Profile) (storage.Store, error) { return New(p.ObjectDir) }
 
 func (s *store) path(key string) string {
 	return filepath.Join(s.root, filepath.FromSlash(key))

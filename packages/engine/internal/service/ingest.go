@@ -12,24 +12,20 @@ import (
 	"github.com/omkar273/burrow/packages/engine/internal/domain/blob"
 	"github.com/omkar273/burrow/packages/engine/internal/domain/object"
 	"github.com/omkar273/burrow/packages/engine/internal/domain/source"
+	"github.com/omkar273/burrow/packages/engine/internal/dto"
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
 	"github.com/omkar273/burrow/packages/engine/internal/storage"
 	"github.com/omkar273/burrow/packages/engine/internal/types"
 )
 
-type IngestResult struct {
-	ObjectID    string
-	VersionID   string
-	ContentHash string
-	// Deduplicated: this provider id was already held, directly or via an
-	// alias recorded by a restore.
-	Deduplicated bool
-	BlobReused   bool
+// IngestService copies objects from a connected source into the archive.
+type IngestService interface {
+	IngestOne(ctx context.Context, conn source.Connector, req *dto.IngestRequest) (*dto.IngestResponse, error)
 }
 
-type Ingest struct{ params ServiceParams }
+type ingestService struct{ params *ServiceParams }
 
-func NewIngest(p ServiceParams) *Ingest { return &Ingest{params: p} }
+func NewIngestService(p ServiceParams) IngestService { return &ingestService{params: &p} }
 
 // IngestOne copies a single object into the archive.
 //
@@ -43,35 +39,39 @@ func NewIngest(p ServiceParams) *Ingest { return &Ingest{params: p} }
 // Identity comes from the provider, never from content. Two distinct messages
 // can share bytes, so a hash match reuses the blob row and nothing else — only
 // restore knows lineage, and only restore records an alias.
-func (s *Ingest) IngestOne(ctx context.Context, conn source.Connector, ref source.ObjectRef) (IngestResult, error) {
+func (s *ingestService) IngestOne(ctx context.Context, conn source.Connector, req *dto.IngestRequest) (*dto.IngestResponse, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
 	sourceID := conn.SourceID()
 
-	if existing, err := s.params.Objects.GetByExternalID(ctx, sourceID, ref.ExternalID); err == nil {
+	if existing, err := s.params.Objects.GetByExternalID(ctx, sourceID, req.ExternalID); err == nil {
 		version, err := s.params.Objects.CurrentVersion(ctx, existing.ID)
 		if err != nil {
-			return IngestResult{}, err
+			return nil, err
 		}
 		held, err := s.params.Blobs.Get(ctx, version.BlobID)
 		if err != nil {
-			return IngestResult{}, err
+			return nil, err
 		}
-		return IngestResult{
+		return &dto.IngestResponse{
 			ObjectID: existing.ID, VersionID: version.ID,
 			ContentHash: held.ContentHash, Deduplicated: true,
 		}, nil
 	} else if !isNotFound(err) {
-		return IngestResult{}, err
+		return nil, err
 	}
 
-	body, _, err := conn.Fetch(ctx, ref)
+	body, _, err := conn.Fetch(ctx, source.ObjectRef{ExternalID: req.ExternalID, ThreadID: req.ThreadID})
 	if err != nil {
-		return IngestResult{}, err
+		return nil, err
 	}
 	defer body.Close()
 
 	raw, err := io.ReadAll(body)
 	if err != nil {
-		return IngestResult{}, ierr.Wrap(err, "reading object body").Mark(ierr.ErrSourceUnavailable)
+		return nil, ierr.Wrap(err, "reading object body").Mark(ierr.ErrSourceUnavailable)
 	}
 
 	sum := sha256.Sum256(raw)
@@ -79,13 +79,13 @@ func (s *Ingest) IngestOne(ctx context.Context, conn source.Connector, ref sourc
 
 	blobID, reused, err := s.ensureBlob(ctx, contentHash, raw)
 	if err != nil {
-		return IngestResult{}, err
+		return nil, err
 	}
 
 	now := time.Now().UTC()
 	obj := &object.Object{
 		ID: types.NewID(types.PrefixObject), SourceID: sourceID,
-		Kind: object.KindMessage, ExternalID: ref.ExternalID,
+		Kind: object.KindMessage, ExternalID: req.ExternalID,
 		FirstSeenAt: now, LastSeenAt: now,
 	}
 	version := &object.Version{
@@ -100,10 +100,10 @@ func (s *Ingest) IngestOne(ctx context.Context, conn source.Connector, ref sourc
 		}
 		return s.params.Objects.CreateVersion(ctx, version)
 	}); err != nil {
-		return IngestResult{}, err
+		return nil, err
 	}
 
-	return IngestResult{
+	return &dto.IngestResponse{
 		ObjectID: obj.ID, VersionID: version.ID,
 		ContentHash: contentHash, BlobReused: reused,
 	}, nil
@@ -111,7 +111,7 @@ func (s *Ingest) IngestOne(ctx context.Context, conn source.Connector, ref sourc
 
 // ensureBlob reuses the existing row for contentHash, or writes raw and
 // creates one.
-func (s *Ingest) ensureBlob(ctx context.Context, contentHash string, raw []byte) (id string, reused bool, err error) {
+func (s *ingestService) ensureBlob(ctx context.Context, contentHash string, raw []byte) (id string, reused bool, err error) {
 	existing, err := s.params.Blobs.GetByContentHash(ctx, contentHash)
 	switch {
 	case err == nil:

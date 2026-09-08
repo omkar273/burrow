@@ -91,7 +91,7 @@ func Open(ctx context.Context, cfg Config) (*Engine, error) {
 			Mark(ierr.ErrProfileLocked)
 	}
 
-	state, err := sqlitedb.Open(sqlitedb.DSN(profile))
+	state, err := sqlitedb.NewClient(profile)
 	if err != nil {
 		_ = lock.Unlock()
 		return nil, err
@@ -102,7 +102,7 @@ func Open(ctx context.Context, cfg Config) (*Engine, error) {
 		return nil, err
 	}
 
-	store, err := localfs.New(profile.ObjectDir)
+	store, err := localfs.NewFromProfile(profile)
 	if err != nil {
 		_ = state.Close()
 		_ = lock.Unlock()

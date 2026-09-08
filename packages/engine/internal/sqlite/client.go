@@ -34,6 +34,9 @@ func FileDSN(path string) string {
 
 func DSN(p config.Profile) string { return FileDSN(p.StateDB) }
 
+// NewClient opens the state database for a profile.
+func NewClient(p config.Profile) (*Client, error) { return Open(DSN(p)) }
+
 func Open(dsn string) (*Client, error) {
 	db, err := sql.Open(DriverName, dsn)
 	if err != nil {

@@ -93,7 +93,7 @@ func withMigrationDB[T any](ctx context.Context, cfg Config, fn func(*sqlitedb.C
 	}
 	defer lock.Unlock() //nolint:errcheck
 
-	client, err := sqlitedb.Open(sqlitedb.DSN(profile))
+	client, err := sqlitedb.NewClient(profile)
 	if err != nil {
 		return zero, err
 	}

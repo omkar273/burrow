@@ -4,7 +4,7 @@ import (
 	stderrors "errors"
 	"testing"
 
-	"github.com/omkar273/burrow/packages/engine/internal/domain/source"
+	"github.com/omkar273/burrow/packages/engine/internal/dto"
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
 	"github.com/omkar273/burrow/packages/engine/internal/storage"
 )
@@ -15,7 +15,7 @@ func TestIngestStoresBlobAndCreatesObject(t *testing.T) {
 	h := newHarness(t)
 	h.src.AddMessage("m1", []byte(rawMessage))
 
-	got, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: "m1"})
+	got, err := h.ingest.IngestOne(t.Context(), h.src, &dto.IngestRequest{ExternalID: "m1"})
 	if err != nil {
 		t.Fatalf("IngestOne: %v", err)
 	}
@@ -41,11 +41,11 @@ func TestIngestingTheSameMessageTwiceIsIdempotent(t *testing.T) {
 	h := newHarness(t)
 	h.src.AddMessage("m1", []byte(rawMessage))
 
-	first, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: "m1"})
+	first, err := h.ingest.IngestOne(t.Context(), h.src, &dto.IngestRequest{ExternalID: "m1"})
 	if err != nil {
 		t.Fatalf("first ingest: %v", err)
 	}
-	second, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: "m1"})
+	second, err := h.ingest.IngestOne(t.Context(), h.src, &dto.IngestRequest{ExternalID: "m1"})
 	if err != nil {
 		t.Fatalf("second ingest: %v", err)
 	}
@@ -66,11 +66,11 @@ func TestIdenticalBytesUnderANewIDBecomeTheirOwnObject(t *testing.T) {
 	h.src.AddMessage("m1", []byte(rawMessage))
 	h.src.AddMessage("m2", []byte(rawMessage))
 
-	first, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: "m1"})
+	first, err := h.ingest.IngestOne(t.Context(), h.src, &dto.IngestRequest{ExternalID: "m1"})
 	if err != nil {
 		t.Fatalf("ingest m1: %v", err)
 	}
-	second, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: "m2"})
+	second, err := h.ingest.IngestOne(t.Context(), h.src, &dto.IngestRequest{ExternalID: "m2"})
 	if err != nil {
 		t.Fatalf("ingest m2: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestNoMetadataIsCommittedWhenTheBlobWriteFails(t *testing.T) {
 	h.src.AddMessage("m1", []byte(rawMessage))
 	h.store.PutErr = stderrors.New("disk full")
 
-	if _, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: "m1"}); err == nil {
+	if _, err := h.ingest.IngestOne(t.Context(), h.src, &dto.IngestRequest{ExternalID: "m1"}); err == nil {
 		t.Fatal("IngestOne succeeded despite a failed blob write")
 	}
 
@@ -108,7 +108,7 @@ func TestIngestSurfacesFetchFailures(t *testing.T) {
 	h := newHarness(t)
 	h.src.FetchErr = ierr.New("provider is down").Mark(ierr.ErrSourceUnavailable)
 
-	_, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: "m1"})
+	_, err := h.ingest.IngestOne(t.Context(), h.src, &dto.IngestRequest{ExternalID: "m1"})
 	if !stderrors.Is(err, ierr.ErrSourceUnavailable) {
 		t.Fatalf("err = %v, want ErrSourceUnavailable", err)
 	}
@@ -120,7 +120,7 @@ func TestIngestFollowsAnAliasRecordedByRestore(t *testing.T) {
 	h := newHarness(t)
 	h.src.AddMessage("m1", []byte(rawMessage))
 
-	original, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: "m1"})
+	original, err := h.ingest.IngestOne(t.Context(), h.src, &dto.IngestRequest{ExternalID: "m1"})
 	if err != nil {
 		t.Fatalf("ingest: %v", err)
 	}
@@ -129,7 +129,7 @@ func TestIngestFollowsAnAliasRecordedByRestore(t *testing.T) {
 	}
 	h.src.AddMessage("restored-1", []byte(rawMessage))
 
-	after, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: "restored-1"})
+	after, err := h.ingest.IngestOne(t.Context(), h.src, &dto.IngestRequest{ExternalID: "restored-1"})
 	if err != nil {
 		t.Fatalf("ingest restored: %v", err)
 	}
@@ -148,7 +148,7 @@ func TestObjectAndVersionCommitTogether(t *testing.T) {
 	h := newHarness(t)
 	h.src.AddMessage("m1", []byte(rawMessage))
 
-	res, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: "m1"})
+	res, err := h.ingest.IngestOne(t.Context(), h.src, &dto.IngestRequest{ExternalID: "m1"})
 	if err != nil {
 		t.Fatalf("IngestOne: %v", err)
 	}

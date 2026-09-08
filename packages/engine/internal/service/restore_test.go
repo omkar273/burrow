@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/omkar273/burrow/packages/engine/internal/domain/source"
+	"github.com/omkar273/burrow/packages/engine/internal/dto"
 	ierr "github.com/omkar273/burrow/packages/engine/internal/errors"
 	"github.com/omkar273/burrow/packages/engine/internal/storage"
 )
@@ -19,12 +20,12 @@ func TestRestoredBytesHashMatchStoredBytes(t *testing.T) {
 	h := newHarness(t)
 	h.src.AddMessage("m1", []byte(rawMessage))
 
-	ingested, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: "m1"})
+	ingested, err := h.ingest.IngestOne(t.Context(), h.src, &dto.IngestRequest{ExternalID: "m1"})
 	if err != nil {
 		t.Fatalf("ingest: %v", err)
 	}
 
-	res, err := h.restore.RestoreObject(t.Context(), h.src, h.src.SourceID(), ingested.ObjectID, source.RestoreOpts{})
+	res, err := h.restore.RestoreObject(t.Context(), h.src, &dto.RestoreRequest{SourceID: h.src.SourceID(), ObjectID: ingested.ObjectID})
 	if err != nil {
 		t.Fatalf("RestoreObject: %v", err)
 	}
@@ -51,13 +52,13 @@ func TestRestoreRefusesCorruptedBlobs(t *testing.T) {
 	h := newHarness(t)
 	h.src.AddMessage("m1", []byte(rawMessage))
 
-	ingested, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: "m1"})
+	ingested, err := h.ingest.IngestOne(t.Context(), h.src, &dto.IngestRequest{ExternalID: "m1"})
 	if err != nil {
 		t.Fatalf("ingest: %v", err)
 	}
 	h.store.Corrupt(storage.KeyForHash(ingested.ContentHash), []byte("tampered"))
 
-	_, err = h.restore.RestoreObject(t.Context(), h.src, h.src.SourceID(), ingested.ObjectID, source.RestoreOpts{})
+	_, err = h.restore.RestoreObject(t.Context(), h.src, &dto.RestoreRequest{SourceID: h.src.SourceID(), ObjectID: ingested.ObjectID})
 	if !stderrors.Is(err, ierr.ErrChecksumMismatch) {
 		t.Fatalf("err = %v, want ErrChecksumMismatch", err)
 	}
@@ -65,7 +66,7 @@ func TestRestoreRefusesCorruptedBlobs(t *testing.T) {
 
 func TestRestoreOfUnknownObjectIsErrNotFound(t *testing.T) {
 	h := newHarness(t)
-	_, err := h.restore.RestoreObject(t.Context(), h.src, h.src.SourceID(), "obj_01J0000000000000000000ZZ", source.RestoreOpts{})
+	_, err := h.restore.RestoreObject(t.Context(), h.src, &dto.RestoreRequest{SourceID: h.src.SourceID(), ObjectID: "obj_01J0000000000000000000ZZ"})
 	if !stderrors.Is(err, ierr.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
@@ -77,11 +78,11 @@ func TestRestoreRecordsTheNewIDAsAnAlias(t *testing.T) {
 	h := newHarness(t)
 	h.src.AddMessage("m1", []byte(rawMessage))
 
-	ingested, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: "m1"})
+	ingested, err := h.ingest.IngestOne(t.Context(), h.src, &dto.IngestRequest{ExternalID: "m1"})
 	if err != nil {
 		t.Fatalf("ingest: %v", err)
 	}
-	res, err := h.restore.RestoreObject(t.Context(), h.src, h.src.SourceID(), ingested.ObjectID, source.RestoreOpts{})
+	res, err := h.restore.RestoreObject(t.Context(), h.src, &dto.RestoreRequest{SourceID: h.src.SourceID(), ObjectID: ingested.ObjectID})
 	if err != nil {
 		t.Fatalf("RestoreObject: %v", err)
 	}
@@ -95,7 +96,7 @@ func TestRestoreRecordsTheNewIDAsAnAlias(t *testing.T) {
 	}
 
 	// And a later sync of that id must not fork the archive.
-	after, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: res.NewExternalID})
+	after, err := h.ingest.IngestOne(t.Context(), h.src, &dto.IngestRequest{ExternalID: res.NewExternalID})
 	if err != nil {
 		t.Fatalf("ingest restored: %v", err)
 	}
@@ -109,11 +110,11 @@ func TestRestoreRecordsProvenance(t *testing.T) {
 	h := newHarness(t)
 	h.src.AddMessage("m1", []byte(rawMessage))
 
-	ingested, err := h.ingest.IngestOne(t.Context(), h.src, source.ObjectRef{ExternalID: "m1"})
+	ingested, err := h.ingest.IngestOne(t.Context(), h.src, &dto.IngestRequest{ExternalID: "m1"})
 	if err != nil {
 		t.Fatalf("ingest: %v", err)
 	}
-	if _, err := h.restore.RestoreObject(t.Context(), h.src, h.src.SourceID(), ingested.ObjectID, source.RestoreOpts{}); err != nil {
+	if _, err := h.restore.RestoreObject(t.Context(), h.src, &dto.RestoreRequest{SourceID: h.src.SourceID(), ObjectID: ingested.ObjectID}); err != nil {
 		t.Fatalf("RestoreObject: %v", err)
 	}
 

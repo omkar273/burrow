@@ -11,8 +11,8 @@ import (
 )
 
 type harness struct {
-	ingest  *service.Ingest
-	restore *service.Restore
+	ingest  service.IngestService
+	restore service.RestoreService
 	src     *testutil.FakeSource
 	store   *testutil.FakeStore
 	objects object.Repository
@@ -39,8 +39,8 @@ func newHarness(t *testing.T) *harness {
 	}
 
 	return &harness{
-		ingest:  service.NewIngest(params),
-		restore: service.NewRestore(params),
+		ingest:  service.NewIngestService(params),
+		restore: service.NewRestoreService(params),
 		src:     testutil.NewFakeSource(srcID),
 		store:   store,
 		objects: objects,

@@ -5,11 +5,9 @@ import (
 
 	"go.uber.org/fx"
 
-	"github.com/omkar273/burrow/packages/engine/internal/config"
 	"github.com/omkar273/burrow/packages/engine/internal/repository"
 	"github.com/omkar273/burrow/packages/engine/internal/service"
 	sqlitedb "github.com/omkar273/burrow/packages/engine/internal/sqlite"
-	"github.com/omkar273/burrow/packages/engine/internal/storage"
 	"github.com/omkar273/burrow/packages/engine/internal/storage/localfs"
 )
 
@@ -23,7 +21,7 @@ import (
 var options = fx.Options(
 	fx.Provide(
 		// State.
-		func(p config.Profile) (*sqlitedb.Client, error) { return sqlitedb.Open(sqlitedb.DSN(p)) },
+		sqlitedb.NewClient,
 
 		// Repositories, each as its domain interface.
 		repository.NewObjectRepository,
@@ -31,15 +29,15 @@ var options = fx.Options(
 		repository.NewSourceRepository,
 
 		// Storage.
-		func(p config.Profile) (storage.Store, error) { return localfs.New(p.ObjectDir) },
+		localfs.NewFromProfile,
 
 		// The sqlite client satisfies service.Txer. Naming it here keeps the
 		// service layer free of any concrete database type.
 		func(c *sqlitedb.Client) service.Txer { return c },
 
 		// Use cases.
-		service.NewIngest,
-		service.NewRestore,
+		service.NewIngestService,
+		service.NewRestoreService,
 	),
 
 	// Migrate on start, close on stop, ordered by fx against everything that
