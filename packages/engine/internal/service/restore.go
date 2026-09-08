@@ -22,7 +22,6 @@ type RestoreResult struct {
 
 type Restore struct{ params ServiceParams }
 
-// NewRestore returns the restore use case.
 func NewRestore(p ServiceParams) *Restore { return &Restore{params: p} }
 
 // RestoreObject writes an object's current version back to the provider.

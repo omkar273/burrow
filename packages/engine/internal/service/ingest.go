@@ -26,13 +26,11 @@ type IngestResult struct {
 	// Deduplicated: this provider id was already held, directly or via an
 	// alias recorded by a restore.
 	Deduplicated bool
-	// BlobReused: the bytes were already stored under another object.
-	BlobReused bool
+	BlobReused   bool
 }
 
 type Ingest struct{ params ServiceParams }
 
-// NewIngest returns the ingest use case.
 func NewIngest(p ServiceParams) *Ingest { return &Ingest{params: p} }
 
 // IngestOne copies a single object into the archive.
@@ -98,8 +96,6 @@ func (s *Ingest) IngestOne(ctx context.Context, conn source.Connector, ref sourc
 	}
 
 	// One transaction: an object with no version is a row pointing at nothing.
-	// The blob is already durable at this point, so a rollback leaves an inert
-	// orphan rather than a dangling reference.
 	if err := s.params.Tx.WithTx(ctx, func(ctx context.Context) error {
 		if err := s.params.Objects.Create(ctx, obj); err != nil {
 			return err
@@ -115,8 +111,8 @@ func (s *Ingest) IngestOne(ctx context.Context, conn source.Connector, ref sourc
 	}, nil
 }
 
-// ensureBlob makes the bytes durable and returns the blob row's id, reusing an
-// existing row when the content is already stored.
+// ensureBlob reuses the existing row for contentHash, or writes raw and
+// creates one.
 func (s *Ingest) ensureBlob(ctx context.Context, contentHash string, raw []byte) (id string, reused bool, err error) {
 	existing, err := s.params.Blobs.GetByContentHash(ctx, contentHash)
 	switch {
